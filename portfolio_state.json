@@ -1,9 +1,9 @@
 {
   "initial_capital": 2000.0,
-  "equity": 2000.0,
+  "equity": 1997.12,
   "peak_equity": 2000.0,
-  "max_drawdown_pct": 0.0,
-  "last_update_id": 599988543,
+  "max_drawdown_pct": -0.14,
+  "last_update_id": 599988544,
   "pending_signals": {},
   "open_positions": {
     "XOM": {
@@ -19,21 +19,22 @@
       "take_profit": 177.21,
       "risk_dollars": 2.32,
       "stage": 1
-    },
-    "ABNB": {
+    }
+  },
+  "closed_trades": [
+    {
       "symbol": "ABNB",
       "sector": "EV_Movilidad",
       "engine": "Motor 2: Explosión Volatilidad (Squeeze | Desacople Alpha)",
       "entry_time": "14/10 17:35",
-      "entry_price": 166.74,
+      "exit_time": "14/10 18:28",
       "qty": 4,
       "notional_usd": 666.96,
-      "atr": 0.5194,
-      "stop_loss": 166.02,
-      "take_profit": 168.41,
-      "risk_dollars": 2.9,
-      "stage": 0
+      "entry_price": 166.74,
+      "exit_price": 166.02,
+      "pnl": -2.88,
+      "r_multiple": -0.99,
+      "reason": "Stop-Loss"
     }
-  },
-  "closed_trades": []
+  ]
 }
