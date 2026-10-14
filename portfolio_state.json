@@ -5,6 +5,21 @@
   "max_drawdown_pct": 0.0,
   "last_update_id": 599988536,
   "pending_signals": {},
-  "open_positions": {},
+  "open_positions": {
+    "XOM": {
+      "symbol": "XOM",
+      "sector": "Macro_Defensivo",
+      "engine": "Motor 1: Impulso Líder Sectorial (Desacople Alpha)",
+      "entry_time": "14/10 17:12",
+      "entry_price": 176.06,
+      "qty": 3.98,
+      "notional_usd": 700.72,
+      "atr": 0.3846,
+      "stop_loss": 175.48,
+      "take_profit": 177.21,
+      "risk_dollars": 2.31,
+      "stage": 0
+    }
+  },
   "closed_trades": []
 }
