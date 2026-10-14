@@ -15,10 +15,10 @@
       "qty": 4,
       "notional_usd": 704.24,
       "atr": 0.3846,
-      "stop_loss": 176.18,
+      "stop_loss": 176.66,
       "take_profit": 177.21,
       "risk_dollars": 2.32,
-      "stage": 1
+      "stage": 2
     }
   },
   "closed_trades": [
