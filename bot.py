@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 # ==============================================================================
-# ARGON QUANT V4.1 — EDICIÓN LOTES ENTEROS QUANTFURY (36 ACTIVOS | RIESGO <3%)
+# ARGON QUANT V4.1 — EDICIÓN LOTES ENTEROS QUANTFURY (ANTI-FREEZE | RIESGO <3%)
 # ==============================================================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
@@ -104,12 +104,12 @@ def save_state(state: dict, push_to_git: bool = False):
 
     if push_to_git:
         try:
-            subprocess.run(["git", "config", "--global", "user.name", "Argon Quant Bot"], check=False)
-            subprocess.run(["git", "config", "--global", "user.email", "bot@argonquant.local"], check=False)
-            subprocess.run(["git", "add", STATE_FILE], check=False)
-            subprocess.run(["git", "commit", "-m", "Actualizacion contable Quantfury v4.1"], check=False)
-            subprocess.run(["git", "pull", "--rebase", "-X", "ours"], check=False)
-            subprocess.run(["git", "push"], check=False)
+            subprocess.run(["git", "config", "--global", "user.name", "Argon Quant Bot"], timeout=10, check=False)
+            subprocess.run(["git", "config", "--global", "user.email", "bot@argonquant.local"], timeout=10, check=False)
+            subprocess.run(["git", "add", STATE_FILE], timeout=10, check=False)
+            subprocess.run(["git", "commit", "-m", "Actualizacion contable Quantfury v4.1"], timeout=10, check=False)
+            subprocess.run(["git", "pull", "--rebase", "-X", "ours"], timeout=15, check=False)
+            subprocess.run(["git", "push"], timeout=15, check=False)
         except Exception as e:
             print(f"Aviso git push: {e}")
 
@@ -135,31 +135,23 @@ def count_open_in_sector(state: dict, sector_name: str) -> int:
 
 
 def compute_whole_shares_for_quantfury(equity: float, entry_price: float, stop_dist: float, target_risk_pct: float) -> int:
-    """
-    Calcula el número EXACTO de ACCIONES ENTERAS (int) para Quantfury,
-    respetando tanto el límite de exposición como el tope de riesgo por operación.
-    """
     if entry_price <= 0 or stop_dist <= 0:
         return 0
 
     risk_dollars = equity * target_risk_pct
     raw_shares = risk_dollars / stop_dist
 
-    # Tope de acciones enteras por capital máximo permitido (38% de la cuenta)
     max_alloc_shares = int(math.floor((equity * MAX_POSITION_ALLOCATION) / entry_price))
     if max_alloc_shares < 1:
-        # Si la acción cuesta más del 38% de la cuenta (ej. LLY a 1.206$), permitir 1 acción solo si no supera el 65% de la cuenta
         if entry_price <= equity * 0.65:
             max_alloc_shares = 1
         else:
             return 0
 
-    # Tope de acciones enteras para no violar jamás el riesgo máximo tolerado (1.45% de la cuenta)
     max_risk_shares = int(math.floor((equity * MAX_SINGLE_RISK_CAP) / stop_dist))
     if max_risk_shares < 1:
         return 0
 
-    # Redondeamos al entero más cercano dentro de los límites estrictos de seguridad
     ideal_int = int(round(raw_shares))
     if ideal_int < 1:
         ideal_int = 1
@@ -281,7 +273,7 @@ def record_closed_trade(state: dict, sym: str, exit_price: float, reason: str):
 
 
 # ==============================================================================
-# MÓDULO 3: DESCARGA MATRICIAL ULTRARRÁPIDA (36 ACTIVOS EN 2.5 SEGUNDOS)
+# MÓDULO 3: DESCARGA MATRICIAL CON TIMEOUT ANTI-CONGELACIÓN (15 SEGUNDOS MAX)
 # ==============================================================================
 def clean_yf_df(df: pd.DataFrame) -> pd.DataFrame:
     if df is None or df.empty:
@@ -380,12 +372,14 @@ def fetch_omni_market_batch() -> dict:
     all_tickers = [REGIME_ORACLE] + TRADE_WATCHLIST
     enriched_map = {}
     try:
+        # TIMEOUT=15 impide que un hilo colgado de Yahoo Finance congele el bot
         raw = yf.download(
             tickers=all_tickers,
             period="5d",
             interval=TIMEFRAME,
             group_by="ticker",
             threads=True,
+            timeout=15,
             progress=False,
             prepost=False
         )
@@ -402,7 +396,7 @@ def fetch_omni_market_batch() -> dict:
 
     if REGIME_ORACLE not in enriched_map:
         try:
-            df_q = yf.Ticker(REGIME_ORACLE).history(period="5d", interval=TIMEFRAME, prepost=False)
+            df_q = yf.Ticker(REGIME_ORACLE).history(period="5d", interval=TIMEFRAME, prepost=False, timeout=10)
             enriched_map[REGIME_ORACLE] = enrich_intraday_features_v4(df_q)
         except Exception:
             pass
@@ -623,7 +617,6 @@ def process_telegram_interactions(state: dict):
                     continue
 
                 sym = sig["symbol"]
-                # Forzar acciones enteras por si venía de una señal pendiente anterior
                 sig["qty"] = int(round(sig["qty"]))
                 sig["notional_usd"] = round(sig["qty"] * sig["entry_price"], 2)
                 state["open_positions"][sym] = sig
@@ -666,7 +659,7 @@ def process_telegram_interactions(state: dict):
                     tg_api("answerCallbackQuery", {"callback_query_id": cb_id, "text": f"{sym} ya estaba cerrada."})
                     continue
                 try:
-                    df_now = clean_yf_df(yf.Ticker(sym).history(period="1d", interval="1m"))
+                    df_now = clean_yf_df(yf.Ticker(sym).history(period="1d", interval="1m", timeout=8))
                     live_price = float(df_now["Close"].iloc[-1]) if not df_now.empty else state["open_positions"][sym]["entry_price"]
                 except Exception:
                     live_price = state["open_positions"][sym]["entry_price"]
@@ -683,7 +676,7 @@ def process_telegram_interactions(state: dict):
                     for s, p in state["open_positions"].items():
                         q_int = int(round(p["qty"]))
                         try:
-                            df_live = clean_yf_df(yf.Ticker(s).history(period="1d", interval="1m"))
+                            df_live = clean_yf_df(yf.Ticker(s).history(period="1d", interval="1m", timeout=8))
                             cur_p = float(df_live["Close"].iloc[-1])
                             lat_pnl = (cur_p - p["entry_price"]) * q_int
                             sign = "+" if lat_pnl >= 0 else ""
@@ -693,7 +686,6 @@ def process_telegram_interactions(state: dict):
                 send_telegram(msg_out)
 
             elif text.startswith("/ajustar"):
-                # Permite ajustar acciones enteras de una posición abierta: ej. /ajustar XOM 4
                 parts = text.split()
                 if len(parts) >= 3:
                     sym_adj = parts[1].upper()
@@ -714,6 +706,23 @@ def process_telegram_interactions(state: dict):
                     except ValueError:
                         send_telegram("⚠️ Formato correcto: `/ajustar XOM 4`")
 
+            elif text.startswith("/cerrar"):
+                # Permite cerrar al precio exacto de Quantfury: ej. /cerrar XOM 175.40
+                parts = text.split()
+                if len(parts) >= 2:
+                    sym_c = parts[1].upper()
+                    if sym_c not in state["open_positions"]:
+                        send_telegram(f"⚠️ No tienes una posición abierta en `{sym_c}`.")
+                    else:
+                        if len(parts) >= 3:
+                            try:
+                                exit_p = float(parts[2].replace(",", "."))
+                            except ValueError:
+                                exit_p = state["open_positions"][sym_c]["stop_loss"]
+                        else:
+                            exit_p = state["open_positions"][sym_c]["stop_loss"]
+                        record_closed_trade(state, sym_c, exit_p, "Cierre Confirmado por Usuario")
+
             elif text.startswith("/escanear") or text.startswith("/radar"):
                 send_live_radar_report()
 
@@ -732,7 +741,7 @@ def process_telegram_interactions(state: dict):
                 parts = text.split()
                 if len(parts) >= 2:
                     try:
-                        new_cap = float(parts[1].replace(",", ""))
+                        new_cap = float(parts[1].replace(",", "."))
                         state["initial_capital"] = new_cap
                         state["equity"] = new_cap
                         state["peak_equity"] = new_cap
@@ -755,7 +764,6 @@ def monitor_confirmed_positions(state: dict, batch: dict, spain_hour_dec: float)
 
     for sym in list(open_pos.keys()):
         pos = open_pos[sym]
-        # Asegurar siempre entero en posiciones abiertas heredadas (ej. XOM 3.98 -> 4)
         if isinstance(pos.get("qty"), float) and not float(pos["qty"]).is_integer():
             pos["qty"] = int(round(pos["qty"]))
             pos["notional_usd"] = round(pos["entry_price"] * pos["qty"], 2)
@@ -764,7 +772,7 @@ def monitor_confirmed_positions(state: dict, batch: dict, spain_hour_dec: float)
         try:
             df = batch.get(sym)
             if df is None or df.empty:
-                df = clean_yf_df(yf.Ticker(sym).history(period="2d", interval=TIMEFRAME, prepost=False))
+                df = clean_yf_df(yf.Ticker(sym).history(period="2d", interval=TIMEFRAME, prepost=False, timeout=10))
             if df.empty:
                 continue
             last = df.iloc[-1]
@@ -883,7 +891,6 @@ def scan_market_and_alert(state: dict):
         if stop_dist <= 0:
             continue
 
-        # Cálculo estricto en ACCIONES ENTERAS para Quantfury
         qty_int = compute_whole_shares_for_quantfury(equity, signal["price"], stop_dist, trade_risk_pct)
         if qty_int < 1:
             continue
@@ -939,7 +946,6 @@ def scan_market_and_alert(state: dict):
 
 def run_continuous_session():
     state = load_state()
-    # Si hay alguna posición abierta con decimales (como XOM 3.98), la redondea sola a entero (4) al arrancar
     for s, p in state.get("open_positions", {}).items():
         if isinstance(p.get("qty"), float) and not float(p["qty"]).is_integer():
             p["qty"] = int(round(p["qty"]))
@@ -950,9 +956,9 @@ def run_continuous_session():
     send_telegram(
         f"🟢 *OMNI-SCANNER QUANTFURY V4.1 EN LÍNEA ({now_str} ESP)*\n"
         f"• *Capital Activo:* `{state['equity']:,.2f} $`\n"
-        f"• *Modo Lotes:* `Acciones Enteras (1, 2, 3, 4...)`\n"
+        f"• *Modo Lotes:* `Acciones Enteras (Anti-Freeze Activo)`\n"
         f"• *Posiciones abiertas vigiladas:* `{len(state['open_positions'])}`\n"
-        f"• *Comandos:* `/cartera`, `/escanear`, `/ajustar XOM 4`, `/historial`"
+        f"• *Comandos:* `/cartera`, `/escanear`, `/cerrar SIMBOLO PRECIO`, `/historial`"
     )
 
     last_scan_time = 0.0
@@ -962,11 +968,17 @@ def run_continuous_session():
         now_spain = datetime.now(SPAIN_TZ)
         spain_hour_dec = now_spain.hour + (now_spain.minute / 60.0)
 
-        process_telegram_interactions(state)
+        try:
+            process_telegram_interactions(state)
+        except Exception as e:
+            print(f"Error procesando Telegram: {e}")
 
         if time.time() - last_scan_time >= 60:
             last_scan_time = time.time()
-            scan_market_and_alert(state)
+            try:
+                scan_market_and_alert(state)
+            except Exception as e:
+                print(f"Error en escaneo: {e}")
 
         if spain_hour_dec >= 22.03 and now_spain.hour >= 22:
             save_state(state, push_to_git=True)
