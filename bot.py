@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 # ==============================================================================
-# ARGON QUANT V4.0 — OMNI-MARKET SCANNER (36 ACTIVOS EN 6 SECTORES | RIESGO <3%)
+# ARGON QUANT V4.1 — EDICIÓN LOTES ENTEROS QUANTFURY (36 ACTIVOS | RIESGO <3%)
 # ==============================================================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
@@ -54,13 +54,14 @@ SEC_CIK_MAP = {
     "CRWD": "0001535527", "LLY": "0000059478", "JPM": "0000019617", "XOM": "0000034088"
 }
 
-# Parámetros Cuantitativos v4.0 (Blindados para mantener Max Drawdown < 3.0%)
+# Parámetros Cuantitativos v4.1 (Blindados para Acciones Enteras y Max Drawdown < 3.0%)
 BASE_RISK_PER_TRADE = 0.0085       # 0.85% riesgo base por operación (17$ en cuenta de 2.000$)
 CONFLUENCE_RISK_PER_TRADE = 0.0115 # 1.15% en alta convicción (23$ en cuenta de 2.000$)
+MAX_SINGLE_RISK_CAP = 0.0145       # Tope máximo tolerado al redondear a 1 acción entera (1.45%)
 MAX_DAILY_DRAWDOWN = -0.025        # Cortafuegos diario inquebrantable (-2.5%)
 MAX_OPEN_POSITIONS = 5             # Máximo 5 posiciones abiertas en total
 MAX_PER_SECTOR = 2                 # Candado Sectorial: Máximo 2 acciones del mismo sector a la vez
-MAX_POSITION_ALLOCATION = 0.35     # Máximo 35% del Poder de Trading en una sola acción
+MAX_POSITION_ALLOCATION = 0.38     # Máximo 38% del Poder de Trading en una sola acción
 
 
 # ==============================================================================
@@ -106,7 +107,7 @@ def save_state(state: dict, push_to_git: bool = False):
             subprocess.run(["git", "config", "--global", "user.name", "Argon Quant Bot"], check=False)
             subprocess.run(["git", "config", "--global", "user.email", "bot@argonquant.local"], check=False)
             subprocess.run(["git", "add", STATE_FILE], check=False)
-            subprocess.run(["git", "commit", "-m", "Actualizacion contable Quantfury v4.0"], check=False)
+            subprocess.run(["git", "commit", "-m", "Actualizacion contable Quantfury v4.1"], check=False)
             subprocess.run(["git", "pull", "--rebase", "-X", "ours"], check=False)
             subprocess.run(["git", "push"], check=False)
         except Exception as e:
@@ -133,6 +134,40 @@ def count_open_in_sector(state: dict, sector_name: str) -> int:
     return count
 
 
+def compute_whole_shares_for_quantfury(equity: float, entry_price: float, stop_dist: float, target_risk_pct: float) -> int:
+    """
+    Calcula el número EXACTO de ACCIONES ENTERAS (int) para Quantfury,
+    respetando tanto el límite de exposición como el tope de riesgo por operación.
+    """
+    if entry_price <= 0 or stop_dist <= 0:
+        return 0
+
+    risk_dollars = equity * target_risk_pct
+    raw_shares = risk_dollars / stop_dist
+
+    # Tope de acciones enteras por capital máximo permitido (38% de la cuenta)
+    max_alloc_shares = int(math.floor((equity * MAX_POSITION_ALLOCATION) / entry_price))
+    if max_alloc_shares < 1:
+        # Si la acción cuesta más del 38% de la cuenta (ej. LLY a 1.206$), permitir 1 acción solo si no supera el 65% de la cuenta
+        if entry_price <= equity * 0.65:
+            max_alloc_shares = 1
+        else:
+            return 0
+
+    # Tope de acciones enteras para no violar jamás el riesgo máximo tolerado (1.45% de la cuenta)
+    max_risk_shares = int(math.floor((equity * MAX_SINGLE_RISK_CAP) / stop_dist))
+    if max_risk_shares < 1:
+        return 0
+
+    # Redondeamos al entero más cercano dentro de los límites estrictos de seguridad
+    ideal_int = int(round(raw_shares))
+    if ideal_int < 1:
+        ideal_int = 1
+
+    final_shares = min(ideal_int, max_alloc_shares, max_risk_shares)
+    return max(0, int(final_shares))
+
+
 def get_performance_summary(state: dict) -> str:
     init_cap = state["initial_capital"]
     eq = state["equity"]
@@ -143,11 +178,11 @@ def get_performance_summary(state: dict) -> str:
 
     if total_t == 0:
         return (
-            f"📊 *ESTADO DE TU CUENTA QUANTFURY (OMNI v4.0)*\n"
+            f"📊 *ESTADO DE TU CUENTA QUANTFURY (OMNI v4.1)*\n"
             f"• *Poder de Trading Base:* `{init_cap:,.2f} $`\n"
             f"• *Balance Actual:* `{eq:,.2f} $` (`+0.00%`)\n"
-            f"• *Activos Vigilados:* `36 acciones (6 sectores)`\n"
-            f"• *Operaciones Confirmadas:* `0`\n"
+            f"• *Modo Lotes:* `Acciones Enteras (1, 2, 3...)`\n"
+            f"• *Operaciones Cerradas:* `0`\n"
             f"• *Posiciones Abiertas:* `{len(state['open_positions'])}`"
         )
 
@@ -160,7 +195,7 @@ def get_performance_summary(state: dict) -> str:
     sign = "+" if net_pnl >= 0 else ""
 
     return (
-        f"📊 *LIBRO CONTABLE QUANTFURY (OMNI v4.0)*\n"
+        f"📊 *LIBRO CONTABLE QUANTFURY (OMNI v4.1)*\n"
         f"• *Capital Inicial:* `{init_cap:,.2f} $`\n"
         f"• *Capital Actual:* `{eq:,.2f} $`\n"
         f"• *Beneficio/Pérdida Neta:* `{sign}{net_pnl:,.2f} $` (`{sign}{net_pct:.2f}%`)\n"
@@ -204,7 +239,8 @@ def record_closed_trade(state: dict, sym: str, exit_price: float, reason: str):
     pos = state["open_positions"].get(sym)
     if not pos:
         return
-    pnl = (exit_price - pos["entry_price"]) * pos["qty"]
+    qty_int = int(round(pos["qty"]))
+    pnl = (exit_price - pos["entry_price"]) * qty_int
     r_mult = pnl / pos["risk_dollars"] if pos["risk_dollars"] > 0 else 0.0
 
     state["equity"] = round(state["equity"] + pnl, 2)
@@ -221,8 +257,8 @@ def record_closed_trade(state: dict, sym: str, exit_price: float, reason: str):
         "engine": pos["engine"],
         "entry_time": pos["entry_time"],
         "exit_time": now_str,
-        "qty": pos["qty"],
-        "notional_usd": round(pos["notional_usd"], 2),
+        "qty": qty_int,
+        "notional_usd": round(pos["entry_price"] * qty_int, 2),
         "entry_price": round(pos["entry_price"], 2),
         "exit_price": round(exit_price, 2),
         "pnl": round(pnl, 2),
@@ -238,7 +274,7 @@ def record_closed_trade(state: dict, sym: str, exit_price: float, reason: str):
         f"{icono} — *{sym}* ({reason})\n"
         f"• *Sector:* `{SECTOR_MAP.get(sym, 'General')}`\n"
         f"• *Entrada:* `{pos['entry_price']:.2f} $` ➔ *Salida:* `{exit_price:.2f} $`\n"
-        f"• *Posición en Quantfury:* `{pos['notional_usd']:,.2f} $` (`{pos['qty']}` acc.)\n"
+        f"• *Lote Cerrado:* `{qty_int} acciones` (`{pos['entry_price']*qty_int:,.2f} $`)\n"
         f"• *Resultado Neto:* `{sign}{pnl:,.2f} $` (`{sign}{r_mult:.2f} R`)\n\n"
         + get_performance_summary(state)
     )
@@ -341,10 +377,6 @@ def enrich_intraday_features_v4(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def fetch_omni_market_batch() -> dict:
-    """
-    Descarga en paralelo los 36 activos + QQQ en una sola llamada matricial
-    para tardar ~2.5 segundos en lugar de 45 segundos.
-    """
     all_tickers = [REGIME_ORACLE] + TRADE_WATCHLIST
     enriched_map = {}
     try:
@@ -368,7 +400,6 @@ def fetch_omni_market_batch() -> dict:
     except Exception as e:
         print(f"Error en descarga batch: {e}")
 
-    # Respaldo individual si algún ticker clave falló
     if REGIME_ORACLE not in enriched_map:
         try:
             df_q = yf.Ticker(REGIME_ORACLE).history(period="5d", interval=TIMEFRAME, prepost=False)
@@ -383,7 +414,7 @@ def check_sec_form4_catalyst(symbol: str) -> bool:
     if not cik:
         return False
     url = f"https://data.sec.gov/submissions/CIK{cik}.json"
-    headers = {"User-Agent": "ArgonQuantCopilot/4.0 (quant@argonbot.org)"}
+    headers = {"User-Agent": "ArgonQuantCopilot/4.1 (quant@argonbot.org)"}
     try:
         r = requests.get(url, headers=headers, timeout=4)
         if r.status_code != 200:
@@ -401,7 +432,7 @@ def check_sec_form4_catalyst(symbol: str) -> bool:
 
 
 # ==============================================================================
-# MÓDULO 4: CEREBRO DE DECISIÓN V4.0 (CON DESACOPLE SECTORIAL ALPHA)
+# MÓDULO 4: CEREBRO DE DECISIÓN V4.1 (CON DESACOPLE SECTORIAL ALPHA)
 # ==============================================================================
 def evaluate_bar_pair_v4(symbol: str, last: pd.Series, prev: pd.Series, live_price: float, qqq_bullish: bool, qqq_ret: float, spain_hour_dec: float):
     price = float(live_price)
@@ -418,8 +449,6 @@ def evaluate_bar_pair_v4(symbol: str, last: pd.Series, prev: pd.Series, live_pri
     if np.isnan(atr) or atr <= 0 or np.isnan(vwap):
         return None
 
-    # Permiso Macro o Desacople Institucional Propio:
-    # Si el Nasdaq (QQQ) está rojo, permite operar acciones que se desacoplan con Alpha >= +0.85% y RVOL >= 1.8x
     decoupled_leader = bool(rs_alpha >= 0.0085 and rvol >= 1.80 and price > vwap and last["EMA_9"] > last["EMA_21"])
     regime_permission = qqq_bullish or decoupled_leader
     mode_tag = "Desacople Alpha" if (not qqq_bullish and decoupled_leader) else "QQQ Alcista"
@@ -524,7 +553,6 @@ def evaluate_symbol_v4(symbol: str, df: pd.DataFrame, qqq_bullish: bool, qqq_ret
 
 
 def send_live_radar_report():
-    """Escanea los 36 activos en 2.5 segundos y muestra el Top 10 donde está entrando el dinero."""
     now_str = datetime.now(SPAIN_TZ).strftime("%H:%M:%S")
     batch = fetch_omni_market_batch()
     df_q = batch.get(REGIME_ORACLE, pd.DataFrame())
@@ -595,11 +623,14 @@ def process_telegram_interactions(state: dict):
                     continue
 
                 sym = sig["symbol"]
+                # Forzar acciones enteras por si venía de una señal pendiente anterior
+                sig["qty"] = int(round(sig["qty"]))
+                sig["notional_usd"] = round(sig["qty"] * sig["entry_price"], 2)
                 state["open_positions"][sym] = sig
                 del state["pending_signals"][sig_id]
                 save_state(state, push_to_git=True)
 
-                tg_api("answerCallbackQuery", {"callback_query_id": cb_id, "text": f"✅ {sym} registrada en cartera!"})
+                tg_api("answerCallbackQuery", {"callback_query_id": cb_id, "text": f"✅ {sym} ({sig['qty']} acc.) registrada!"})
                 close_kb = {
                     "inline_keyboard": [[
                         {"text": f"🔴 Cerré {sym} Manualmente en Quantfury", "callback_data": f"CLOSE|{sym}"}
@@ -607,7 +638,7 @@ def process_telegram_interactions(state: dict):
                 }
                 new_text = (
                     msg.get("text", "")
-                    + f"\n\n✅ CONFIRMADA EN QUANTFURY ({datetime.now(SPAIN_TZ).strftime('%H:%M:%S')} ESP)\n"
+                    + f"\n\n✅ CONFIRMADA EN QUANTFURY ({sig['qty']} acciones enteras — {datetime.now(SPAIN_TZ).strftime('%H:%M:%S')} ESP)\n"
                     f"El bot vigila ahora tu Trinquete de 2 Niveles, Take-Profit y Stop-Loss."
                 )
                 tg_api("editMessageText", {
@@ -650,15 +681,38 @@ def process_telegram_interactions(state: dict):
                 if state["open_positions"]:
                     msg_out += "\n\n📂 *POSICIONES ABIERTAS AHORA MISMO:*"
                     for s, p in state["open_positions"].items():
+                        q_int = int(round(p["qty"]))
                         try:
                             df_live = clean_yf_df(yf.Ticker(s).history(period="1d", interval="1m"))
                             cur_p = float(df_live["Close"].iloc[-1])
-                            lat_pnl = (cur_p - p["entry_price"]) * p["qty"]
+                            lat_pnl = (cur_p - p["entry_price"]) * q_int
                             sign = "+" if lat_pnl >= 0 else ""
-                            msg_out += f"\n• *{s}* (`{SECTOR_MAP.get(s, '')}`): Entrada `{p['entry_price']:.2f}$` | Actual `{cur_p:.2f}$` (`{sign}{lat_pnl:.2f}$`) | Stop: `{p['stop_loss']:.2f}$`"
+                            msg_out += f"\n• *{s}* (`{q_int} acc.`): Entrada `{p['entry_price']:.2f}$` | Actual `{cur_p:.2f}$` (`{sign}{lat_pnl:.2f}$`) | Stop: `{p['stop_loss']:.2f}$`"
                         except Exception:
-                            msg_out += f"\n• *{s}*: Entrada `{p['entry_price']:.2f}$` | Stop: `{p['stop_loss']:.2f}$`"
+                            msg_out += f"\n• *{s}* (`{q_int} acc.`): Entrada `{p['entry_price']:.2f}$` | Stop: `{p['stop_loss']:.2f}$`"
                 send_telegram(msg_out)
+
+            elif text.startswith("/ajustar"):
+                # Permite ajustar acciones enteras de una posición abierta: ej. /ajustar XOM 4
+                parts = text.split()
+                if len(parts) >= 3:
+                    sym_adj = parts[1].upper()
+                    try:
+                        new_qty = int(float(parts[2]))
+                        if sym_adj in state["open_positions"] and new_qty >= 1:
+                            pos = state["open_positions"][sym_adj]
+                            pos["qty"] = new_qty
+                            pos["notional_usd"] = round(pos["entry_price"] * new_qty, 2)
+                            stop_d = abs(pos["entry_price"] - pos["stop_loss"])
+                            pos["risk_dollars"] = round(stop_d * new_qty, 2)
+                            save_state(state, push_to_git=True)
+                            send_telegram(
+                                f"✅ *Posición abierta en {sym_adj} ajustada a:* `{new_qty} acciones enteras` (`{pos['notional_usd']:,.2f} $`)"
+                            )
+                        else:
+                            send_telegram(f"⚠️ No tienes una posición abierta en `{sym_adj}`.")
+                    except ValueError:
+                        send_telegram("⚠️ Formato correcto: `/ajustar XOM 4`")
 
             elif text.startswith("/escanear") or text.startswith("/radar"):
                 send_live_radar_report()
@@ -671,7 +725,7 @@ def process_telegram_interactions(state: dict):
                     lines = ["📜 *ÚLTIMAS 10 OPERACIONES EN QUANTFURY:*"]
                     for t in closed:
                         s_pnl = f"+{t['pnl']:.2f}$" if t["pnl"] >= 0 else f"{t['pnl']:.2f}$"
-                        lines.append(f"• `{t['exit_time']}` | *{t['symbol']}* | `{s_pnl}` (`{t['r_multiple']:+.2f}R`) — _{t['reason']}_")
+                        lines.append(f"• `{t['exit_time']}` | *{t['symbol']}* (`{int(round(t['qty']))} acc.`) | `{s_pnl}` (`{t['r_multiple']:+.2f}R`) — _{t['reason']}_")
                     send_telegram("\n".join(lines))
 
             elif text.startswith("/capital"):
@@ -692,7 +746,7 @@ def process_telegram_interactions(state: dict):
 
 
 # ==============================================================================
-# MÓDULO 6: VIGILANCIA DE POSICIONES Y DISPARO OMNI-MARKET (36 ACTIVOS)
+# MÓDULO 6: VIGILANCIA DE POSICIONES Y DISPARO OMNI-MARKET (ACCIONES ENTERAS)
 # ==============================================================================
 def monitor_confirmed_positions(state: dict, batch: dict, spain_hour_dec: float):
     open_pos = state["open_positions"]
@@ -701,6 +755,12 @@ def monitor_confirmed_positions(state: dict, batch: dict, spain_hour_dec: float)
 
     for sym in list(open_pos.keys()):
         pos = open_pos[sym]
+        # Asegurar siempre entero en posiciones abiertas heredadas (ej. XOM 3.98 -> 4)
+        if isinstance(pos.get("qty"), float) and not float(pos["qty"]).is_integer():
+            pos["qty"] = int(round(pos["qty"]))
+            pos["notional_usd"] = round(pos["entry_price"] * pos["qty"], 2)
+            save_state(state, push_to_git=True)
+
         try:
             df = batch.get(sym)
             if df is None or df.empty:
@@ -727,7 +787,7 @@ def monitor_confirmed_positions(state: dict, batch: dict, spain_hour_dec: float)
 
             if spain_hour_dec >= 21.88:
                 send_telegram(
-                    f"⏰ *SON LAS 21:55 ESP — CIERRA {sym} EN QUANTFURY*\n"
+                    f"⏰ *SON LAS 21:55 ESP — CIERRA {sym} ({pos['qty']} acc.) EN QUANTFURY*\n"
                     f"Cerrando contabilidad al precio actual (`{close_p:.2f} $`) para dormir con 0% riesgo nocturno."
                 )
                 record_closed_trade(state, sym, close_p, "Cierre Sesión (21:55 ESP)")
@@ -742,7 +802,7 @@ def monitor_confirmed_positions(state: dict, batch: dict, spain_hour_dec: float)
                 send_telegram(
                     f"🔒 *TRINQUETE NIVEL 2 EN {sym} (+1.1R ASEGURADO)*\n"
                     f"• El precio ya alcanzó `{high_p:.2f} $` (+2.30x ATR).\n"
-                    f"👉 *Entra en Quantfury y sube tu Stop Order a:* `{new_sl:.2f} $`"
+                    f"👉 *Entra en Quantfury y sube tu Stop Order de tus {pos['qty']} acciones a:* `{new_sl:.2f} $`"
                 )
             elif stage < 1 and high_p >= pos["entry_price"] + (1.55 * atr):
                 new_sl = round(pos["entry_price"] + (0.30 * atr), 2)
@@ -752,7 +812,7 @@ def monitor_confirmed_positions(state: dict, batch: dict, spain_hour_dec: float)
                 send_telegram(
                     f"🛡️ *ESCUDO BREAK-EVEN EN {sym} (+0.2R ASEGURADO)*\n"
                     f"• El precio ya alcanzó `{high_p:.2f} $` (+1.55x ATR).\n"
-                    f"👉 *Entra en Quantfury y sube tu Stop Order a:* `{new_sl:.2f} $`"
+                    f"👉 *Entra en Quantfury y sube tu Stop Order de tus {pos['qty']} acciones a:* `{new_sl:.2f} $`"
                 )
         except Exception as e:
             print(f"Error vigilando {sym}: {e}")
@@ -772,11 +832,9 @@ def scan_market_and_alert(state: dict):
 
     monitor_confirmed_positions(state, batch, spain_hour_dec)
 
-    # Cortafuegos Diario (-2.5%) para mantener siempre el Drawdown < 3%
     if get_daily_realized_pnl_pct(state) <= MAX_DAILY_DRAWDOWN:
         return
 
-    # Ventanas Prime en Hora Española (15:40-18:00 y 19:45-21:15)
     if spain_hour_dec < 15.66 or (18.0 <= spain_hour_dec < 19.75) or spain_hour_dec >= 21.25:
         return
 
@@ -798,14 +856,12 @@ def scan_market_and_alert(state: dict):
         rs_alpha = float(df_sym.iloc[-1]["Intraday_Ret"]) - qqq_ret
         ranked_candidates.append((rs_alpha, sym, df_sym))
 
-    # Prioridad absoluta a las acciones con mayor Fuerza Relativa (Alpha) de entre las 36
     ranked_candidates.sort(key=lambda x: x[0], reverse=True)
 
     for rs_alpha, sym, df_sym in ranked_candidates:
         if len(state["open_positions"]) >= MAX_OPEN_POSITIONS:
             break
 
-        # Candado Sectorial: máximo 2 posiciones del mismo sector a la vez
         sector_name = SECTOR_MAP.get(sym, "General")
         if count_open_in_sector(state, sector_name) >= MAX_PER_SECTOR:
             continue
@@ -823,18 +879,18 @@ def scan_market_and_alert(state: dict):
         trade_risk_pct = CONFLUENCE_RISK_PER_TRADE if is_high_conf else BASE_RISK_PER_TRADE
 
         equity = state["equity"]
-        risk_dollars = equity * trade_risk_pct
         stop_dist = abs(signal["price"] - signal["stop_loss"])
         if stop_dist <= 0:
             continue
 
-        raw_shares = risk_dollars / stop_dist
-        max_shares = (equity * MAX_POSITION_ALLOCATION) / signal["price"]
-        qty = round(min(raw_shares, max_shares), 2)
-        notional_usd = round(qty * signal["price"], 2)
-
-        if notional_usd < 10:
+        # Cálculo estricto en ACCIONES ENTERAS para Quantfury
+        qty_int = compute_whole_shares_for_quantfury(equity, signal["price"], stop_dist, trade_risk_pct)
+        if qty_int < 1:
             continue
+
+        notional_usd = round(qty_int * signal["price"], 2)
+        actual_risk_usd = round(qty_int * stop_dist, 2)
+        actual_reward_usd = round((signal["take_profit"] - signal["price"]) * qty_int, 2)
 
         sig_id = f"{sym}_{now_spain.strftime('%H%M')}"
         state["pending_signals"][sig_id] = {
@@ -843,52 +899,60 @@ def scan_market_and_alert(state: dict):
             "engine": signal["strategy"],
             "entry_time": now_spain.strftime("%d/%m %H:%M"),
             "entry_price": round(signal["price"], 2),
-            "qty": qty,
+            "qty": qty_int,
             "notional_usd": notional_usd,
             "atr": round(signal["atr"], 4),
             "stop_loss": signal["stop_loss"],
             "take_profit": signal["take_profit"],
-            "risk_dollars": round(qty * stop_dist, 2),
+            "risk_dollars": actual_risk_usd,
             "stage": 0
         }
         save_state(state)
 
-        conv_label = "🔥 *ALTA CONVICCIÓN (1.15% Riesgo)*" if is_high_conf else "✅ *ESTÁNDAR (0.85% Riesgo)*"
+        conv_label = "🔥 *ALTA CONVICCIÓN*" if is_high_conf else "✅ *ESTÁNDAR*"
         sec_label = " | 🏛️ *SEC Form 4*" if sec_catalyst else ""
 
         inline_kb = {
             "inline_keyboard": [[
-                {"text": f"🟢 ENTRÉ EN QUANTFURY ({sym})", "callback_data": f"EXEC|{sig_id}"},
+                {"text": f"🟢 ENTRÉ EN QUANTFURY ({qty_int} acc. {sym})", "callback_data": f"EXEC|{sig_id}"},
                 {"text": "⚪ Ignorar", "callback_data": f"SKIP|{sig_id}"}
             ]]
         }
 
         send_telegram(
-            f"🎯 *SEÑAL OMNI-SCANNER ({sym}) — {hora_str} ESP*\n"
+            f"🎯 *SEÑAL QUANTFURY ({sym}) — {hora_str} ESP*\n"
             f"• *Sector:* `{sector_name}`\n"
             f"• *Motor:* {signal['strategy']}\n"
             f"• *Nivel:* {conv_label}{sec_label}\n"
             f"────────────────────────\n"
-            f"💵 *DATOS PARA METER EN QUANTFURY:*\n"
+            f"💵 *DATOS EXACTOS PARA QUANTFURY:*\n"
             f"• *Acción (LONG):* `{sym}` a `~{signal['price']:.2f} $`\n"
-            f"• *Tamaño a Comprar:* **`{notional_usd:,.2f} $`** (`{qty}` acciones)\n"
-            f"• *Stop Order (SL):* **`{signal['stop_loss']:.2f} $`** _(Riesgo: -{qty*stop_dist:.2f}$)_\n"
-            f"• *Target Order (TP):* **`{signal['take_profit']:.2f} $`** _(Beneficio: +{(signal['take_profit']-signal['price'])*qty:.2f}$)_\n"
+            f"• *Cantidad a Comprar:* **`{qty_int} acciones enteras`** (`{notional_usd:,.2f} $`)\n"
+            f"• *Stop Order (SL):* **`{signal['stop_loss']:.2f} $`** _(Riesgo: -{actual_risk_usd:.2f}$)_\n"
+            f"• *Target Order (TP):* **`{signal['take_profit']:.2f} $`** _(Beneficio: +{actual_reward_usd:.2f}$)_\n"
             f"────────────────────────\n"
             f"📡 `{signal['metrics']}`\n\n"
-            f"👇 *Pulsa el botón verde si has abierto la operación:*",
+            f"👇 *Pulsa el botón verde si has comprado las {qty_int} acciones:*",
             reply_markup=inline_kb
         )
 
 
 def run_continuous_session():
     state = load_state()
+    # Si hay alguna posición abierta con decimales (como XOM 3.98), la redondea sola a entero (4) al arrancar
+    for s, p in state.get("open_positions", {}).items():
+        if isinstance(p.get("qty"), float) and not float(p["qty"]).is_integer():
+            p["qty"] = int(round(p["qty"]))
+            p["notional_usd"] = round(p["entry_price"] * p["qty"], 2)
+            save_state(state, push_to_git=True)
+
     now_str = datetime.now(SPAIN_TZ).strftime("%H:%M:%S")
     send_telegram(
-        f"🟢 *OMNI-SCANNER QUANTFURY V4.0 EN LÍNEA ({now_str} ESP)*\n"
+        f"🟢 *OMNI-SCANNER QUANTFURY V4.1 EN LÍNEA ({now_str} ESP)*\n"
         f"• *Capital Activo:* `{state['equity']:,.2f} $`\n"
-        f"• *Cobertura:* `36 acciones líderes en 6 sectores` (con Desacople Alpha y Candado Sectorial <3% DD).\n"
-        f"• *Comandos en vivo:* `/escanear`, `/cartera`, `/historial`, `/capital`"
+        f"• *Modo Lotes:* `Acciones Enteras (1, 2, 3, 4...)`\n"
+        f"• *Posiciones abiertas vigiladas:* `{len(state['open_positions'])}`\n"
+        f"• *Comandos:* `/cartera`, `/escanear`, `/ajustar XOM 4`, `/historial`"
     )
 
     last_scan_time = 0.0
