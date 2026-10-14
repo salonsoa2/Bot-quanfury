@@ -2,15 +2,19 @@ name: Argon Quant v3.5 Quantfury Copilot
 
 on:
   schedule:
-    # Encendido automático de sesión completa + respaldos horarios
-    - cron: '25 13 * * 1-5'
-    - cron: '0 14,15,16,17,18,19 * * 1-5'
+    # Relevos automáticos en Hora Española (CEST = UTC+2):
+    # 15:20 ESP (Apertura), 16:50 ESP, 18:20 ESP, 19:40 ESP (Tarde) y 21:00 ESP (Cierre)
+    - cron: '20 13 * * 1-5'
+    - cron: '50 14 * * 1-5'
+    - cron: '20 16 * * 1-5'
+    - cron: '40 17 * * 1-5'
+    - cron: '0 19 * * 1-5'
   workflow_dispatch:
 
-# Impide que se abran dos bots a la vez si ya está corriendo el de la tarde
+# true = Si entra un relevo nuevo o pulsas Run workflow, mata cualquier proceso colgado al instante
 concurrency:
   group: quantfury_live_copilot
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
