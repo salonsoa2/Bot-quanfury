@@ -1,25 +1,11 @@
 {
   "initial_capital": 2000.0,
-  "equity": 1996.27,
+  "equity": 1989.38,
   "peak_equity": 2001.72,
-  "max_drawdown_pct": -0.27,
-  "last_update_id": 599988559,
+  "max_drawdown_pct": -0.62,
+  "last_update_id": 599988560,
   "pending_signals": {},
   "open_positions": {
-    "SOFI": {
-      "symbol": "SOFI",
-      "sector": "Cripto_Fintech",
-      "engine": "Motor 2: Explosión Volatilidad (Squeeze | QQQ Alcista)",
-      "entry_time": "15/10 15:40",
-      "entry_price": 14.28,
-      "qty": 53,
-      "notional_usd": 756.84,
-      "atr": 0.093,
-      "stop_loss": 14.15,
-      "take_profit": 14.58,
-      "risk_dollars": 7.15,
-      "stage": 0
-    },
     "NOW": {
       "symbol": "NOW",
       "sector": "Software_Cloud",
@@ -90,6 +76,20 @@
       "exit_price": 142.46,
       "pnl": -5.45,
       "r_multiple": -1.0,
+      "reason": "Stop-Loss"
+    },
+    {
+      "symbol": "SOFI",
+      "sector": "Cripto_Fintech",
+      "engine": "Motor 2: Explosión Volatilidad (Squeeze | QQQ Alcista)",
+      "entry_time": "15/10 15:40",
+      "exit_time": "15/10 15:46",
+      "qty": 53,
+      "notional_usd": 756.84,
+      "entry_price": 14.28,
+      "exit_price": 14.15,
+      "pnl": -6.89,
+      "r_multiple": -0.96,
       "reason": "Stop-Loss"
     }
   ]
