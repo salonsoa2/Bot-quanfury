@@ -16,5 +16,23 @@
     "cap_used": 452.76,
     "risk_usd": 3.84,
     "risk_pct": 0.19
+  },
+  "SPOT_1792083638": {
+    "symbol": "SPOT",
+    "sector": "Big_Tech_Media",
+    "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
+    "price": 530.24,
+    "vwap": 526.11,
+    "atr": 3.45,
+    "rvol": 1.74,
+    "rsi": 57.4,
+    "alpha": 1.52,
+    "stop_loss": 525.76,
+    "take_profit": 540.99,
+    "high_conviction": true,
+    "shares": 1,
+    "cap_used": 530.24,
+    "risk_usd": 4.48,
+    "risk_pct": 0.23
   }
 }
