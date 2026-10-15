@@ -1,32 +1,11 @@
 {
   "initial_capital": 2000.0,
-  "equity": 1988.73,
+  "equity": 1994.41,
   "peak_equity": 2001.72,
   "max_drawdown_pct": -0.99,
-  "last_update_id": 599988596,
+  "last_update_id": 599988597,
   "pending_signals": {},
   "open_positions": {
-    "VST": {
-      "symbol": "VST",
-      "sector": "Energia_IA_Industrial",
-      "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
-      "shares": 2,
-      "initial_shares": 3,
-      "realized_partial_usd": 1.65,
-      "entry_price": 151.16,
-      "stop_loss": 152.63,
-      "initial_stop_loss": 149.88,
-      "take_profit": 154.22,
-      "atr": 0.98,
-      "trail_1_trigger": 152.78,
-      "trail_1_stop": 151.36,
-      "trail_2_trigger": 153.46,
-      "trail_2_stop": 152.63,
-      "be_triggered": true,
-      "trail2_triggered": true,
-      "timestop_alerted": false,
-      "opened_at": "2026-10-15 18:34:08"
-    },
     "SPOT": {
       "symbol": "SPOT",
       "sector": "Big_Tech_Media",
@@ -45,7 +24,7 @@
       "trail_2_stop": 536.04,
       "be_triggered": false,
       "trail2_triggered": false,
-      "timestop_alerted": false,
+      "timestop_alerted": true,
       "opened_at": "2026-10-15 19:02:17"
     },
     "META": {
@@ -191,15 +170,15 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": 5.17,
-  "total_trades": 1,
-  "wins": 1,
+  "realized_pnl": 10.85,
+  "total_trades": 2,
+  "wins": 2,
   "losses": 0,
   "consecutive_losses": 0,
-  "gross_profit": 5.17,
+  "gross_profit": 10.85,
   "gross_loss": 0.0,
   "daily_pnl": {
-    "2026-10-15": 5.17
+    "2026-10-15": 10.85
   },
   "trade_history": [
     {
@@ -213,10 +192,22 @@
       "pnl_pct": 2.04,
       "reason": "🎯 TAKE-PROFIT FINAL ALCANZADO",
       "closed_at": "2026-10-15 20:34:00"
+    },
+    {
+      "symbol": "VST",
+      "sector": "Energia_IA_Industrial",
+      "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
+      "shares": 3,
+      "entry_price": 151.16,
+      "exit_price": 154.0,
+      "pnl_usd": 7.33,
+      "pnl_pct": 1.88,
+      "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
+      "closed_at": "2026-10-15 21:18:01"
     }
   ],
   "cooldowns": {
-    "VST": "2026-10-15T18:56:58.234121+02:00",
+    "VST": "2026-10-15T21:43:01.472266+02:00",
     "SPOT": "2026-10-15T19:25:37.962426+02:00",
     "META": "2026-10-15T19:31:56.331846+02:00",
     "SHOP": "2026-10-15T20:59:00.498694+02:00",
