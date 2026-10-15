@@ -56,7 +56,7 @@
       "initial_shares": 1,
       "realized_partial_usd": 0.0,
       "entry_price": 735.26,
-      "stop_loss": 729.04,
+      "stop_loss": 736.22,
       "initial_stop_loss": 729.04,
       "take_profit": 750.17,
       "atr": 4.78,
@@ -64,7 +64,7 @@
       "trail_1_stop": 736.22,
       "trail_2_trigger": 746.49,
       "trail_2_stop": 742.43,
-      "be_triggered": false,
+      "be_triggered": true,
       "trail2_triggered": false,
       "timestop_alerted": false,
       "opened_at": "2026-10-15 19:08:37"
