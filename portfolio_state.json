@@ -1,9 +1,9 @@
 {
   "initial_capital": 2000.0,
-  "equity": 1985.21,
+  "equity": 1988.73,
   "peak_equity": 2001.72,
   "max_drawdown_pct": -0.99,
-  "last_update_id": 599988588,
+  "last_update_id": 599988593,
   "pending_signals": {},
   "open_positions": {
     "VST": {
@@ -68,27 +68,6 @@
       "trail2_triggered": false,
       "timestop_alerted": false,
       "opened_at": "2026-10-15 19:08:37"
-    },
-    "SHOP": {
-      "symbol": "SHOP",
-      "sector": "Software_HyperGrowth",
-      "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
-      "shares": 1,
-      "initial_shares": 1,
-      "realized_partial_usd": 0.0,
-      "entry_price": 172.69,
-      "stop_loss": 174.37,
-      "initial_stop_loss": 171.23,
-      "take_profit": 176.19,
-      "atr": 1.12,
-      "trail_1_trigger": 174.54,
-      "trail_1_stop": 172.91,
-      "trail_2_trigger": 175.32,
-      "trail_2_stop": 174.37,
-      "be_triggered": true,
-      "trail2_triggered": true,
-      "timestop_alerted": false,
-      "opened_at": "2026-10-15 19:16:31"
     }
   },
   "closed_trades": [
@@ -191,22 +170,35 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": 1.65,
-  "total_trades": 0,
-  "wins": 0,
+  "realized_pnl": 5.17,
+  "total_trades": 1,
+  "wins": 1,
   "losses": 0,
   "consecutive_losses": 0,
-  "gross_profit": 1.65,
+  "gross_profit": 5.17,
   "gross_loss": 0.0,
   "daily_pnl": {
-    "2026-10-15": 1.65
+    "2026-10-15": 5.17
   },
-  "trade_history": [],
+  "trade_history": [
+    {
+      "symbol": "SHOP",
+      "sector": "Software_HyperGrowth",
+      "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
+      "shares": 1,
+      "entry_price": 172.69,
+      "exit_price": 176.21,
+      "pnl_usd": 3.52,
+      "pnl_pct": 2.04,
+      "reason": "🎯 TAKE-PROFIT FINAL ALCANZADO",
+      "closed_at": "2026-10-15 20:34:00"
+    }
+  ],
   "cooldowns": {
     "VST": "2026-10-15T18:56:58.234121+02:00",
     "SPOT": "2026-10-15T19:25:37.962426+02:00",
     "META": "2026-10-15T19:31:56.331846+02:00",
-    "SHOP": "2026-10-15T19:40:29.439534+02:00"
+    "SHOP": "2026-10-15T20:59:00.498694+02:00"
   },
   "last_global_signal_ts": 1792084530.0031898,
   "eod_alert_sent_date": ""
