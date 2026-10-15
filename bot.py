@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 # ==============================================================================
-# CONFIGURACION INSTITUCIONAL — ARGON QUANT V4.5 (APEX COMPOUNDER EDITION)
+# CONFIGURACION INSTITUCIONAL — ARGON QUANT V4.5.2 (OPENING SHIELD & APEX)
 # ==============================================================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
@@ -32,9 +32,9 @@ MAX_OPEN_POSITIONS = 4              # 4 posiciones simultaneas
 MAX_PER_SECTOR = 2                  # Maximo 2 activos del mismo sector
 MAX_DAILY_DRAWDOWN = -0.020         # Cortafuegos diario REAL (-2.0% = -40$ cerradas + flotantes)
 
-# Filtros de Precision Quirurgica V4.5
+# Filtros de Precision Quirurgica V4.5.2
 MIN_STOP_DISTANCE_PCT = 0.0080      # Stop-Loss nunca menor al 0.80% del precio
-SIGNAL_COOLDOWN_SECONDS = 330       # 5.5 minutos entre senales (3.5 - 4.5 trades/dia sin metralleta)
+SIGNAL_COOLDOWN_SECONDS = 330       # 5.5 minutos entre senales (sin metralleta)
 MIN_CANDLE_CLOSE_STRENGTH = 0.58    # Cierre en el 42% superior de la vela (sin mechas de rechazo)
 MAX_VWAP_EXTENSION_ATR = 2.35       # No comprar rupturas agotadas lejos del VWAP
 
@@ -75,7 +75,7 @@ def now_madrid():
 def today_str():
     return now_madrid().strftime("%Y-%m-%d")
 
-def git_sync_state(commit_msg="Auto-sync Argon Quant v4.5"):
+def git_sync_state(commit_msg="Auto-sync Argon Quant v4.5.2"):
     try:
         subprocess.run(["git", "config", "--global", "user.name", "argon-quant-bot"], check=False)
         subprocess.run(["git", "config", "--global", "user.email", "bot@argonquant.local"], check=False)
@@ -136,7 +136,7 @@ def load_state():
         "eod_alert_sent_date": ""
     }
 
-def save_state(state, push_to_git=False, msg="Sync portfolio state v4.5"):
+def save_state(state, push_to_git=False, msg="Sync portfolio state v4.5.2"):
     try:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2, ensure_ascii=False)
@@ -162,7 +162,7 @@ def save_signals(signals):
         print(f"[ERROR] Error guardando senales: {e}")
 
 # ==============================================================================
-# COMUNICACION TELEGRAM
+# COMUNICACION TELEGRAM (CON FALLBACK ANTI-ERROR HTML)
 # ==============================================================================
 def send_telegram_message(text, reply_markup=None):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
@@ -178,7 +178,14 @@ def send_telegram_message(text, reply_markup=None):
         payload["reply_markup"] = json.dumps(reply_markup)
     try:
         r = requests.post(url, data=payload, timeout=10)
-        return r.json()
+        res = r.json()
+        if not res.get("ok"):
+            clean_text = text.replace("<b>", "").replace("</b>", "").replace("<code>", "").replace("</code>", "").replace("<i>", "").replace("</i>", "")
+            payload["text"] = clean_text
+            payload.pop("parse_mode", None)
+            r2 = requests.post(url, data=payload, timeout=10)
+            return r2.json()
+        return res
     except Exception as e:
         print(f"[WARN] Telegram send error: {e}")
         return None
@@ -240,7 +247,6 @@ def get_floating_pnl_usd(state, market_data=None):
     return floating
 
 def get_total_daily_drawdown_pct(state, market_data=None):
-    """Suma las perdidas cerradas hoy MAS las perdidas latentes en posiciones abiertas."""
     d_str = today_str()
     realized_today = float(state.get("daily_pnl", {}).get(d_str, 0.0))
     floating_now = get_floating_pnl_usd(state, market_data)
@@ -275,7 +281,6 @@ def calculate_whole_share_sizing(state, entry_price, stop_price, high_conviction
     if entry_price > usable_free_power:
         return 0, 0.0, 0.0, 0.0
 
-    # Dynamic Anti-Streak Throttle: Si encadena 2 perdidas seguidas, reduce el riesgo un 28% para blindar los 120$
     streak_mult = 0.72 if int(state.get("consecutive_losses", 0)) >= 2 else 1.0
 
     target_risk_pct = (HIGH_CONVICTION_RISK_PCT if high_conviction else BASE_RISK_PCT) * streak_mult
@@ -321,7 +326,6 @@ def calculate_whole_share_sizing(state, entry_price, stop_price, high_conviction
     return int(final_shares), round(capital_used, 2), round(actual_risk_usd, 2), round(actual_risk_pct * 100, 2)
 
 def register_partial_profit(state, symbol, shares_sold, exit_price):
-    """Registra el cobro parcial del 50% en +1.65x ATR en el libro contable."""
     open_pos = state.get("open_positions", {})
     if symbol not in open_pos:
         return 0.0
@@ -450,7 +454,7 @@ def check_sec_form4_catalyst(symbol):
     return has_recent_form4
 
 # ==============================================================================
-# DESCARGA DE 48 ACTIVOS Y MOTOR DE INDICADORES V4.5
+# DESCARGA DE 48 ACTIVOS Y MOTOR DE INDICADORES CON AISLAMIENTO DIARIO (V4.5.2)
 # ==============================================================================
 def fetch_omni_market_batch():
     tickers_to_fetch = list(set(ALL_TICKERS + [BENCHMARK]))
@@ -462,9 +466,9 @@ def fetch_omni_market_batch():
             group_by="ticker",
             auto_adjust=True,
             prepost=False,
-            threads=False,
+            threads=True,
             progress=False,
-            timeout=18
+            timeout=25
         )
         return raw
     except Exception as e:
@@ -529,7 +533,9 @@ def compute_intraday_indicators(df):
     kc_lower = bb_mid - (1.5 * df["ATR"])
     df["Squeeze_On"] = (df["BB_Upper"] < kc_upper) & (df["BB_Lower"] > kc_lower)
     df["Recent_Squeeze"] = df["Squeeze_On"].rolling(4).max() > 0
-    df["Flag_3Bar_High"] = df["High"].shift(1).rolling(3).max()
+
+    # AISLAMIENTO INTRADIA V4.5.2: Flag_3Bar_High solo mira velas de la fecha de HOY (nunca de ayer)
+    df["Flag_3Bar_High"] = df.groupby("Date")["High"].transform(lambda s: s.shift(1).rolling(3, min_periods=3).max())
 
     vol_cap = df["Volume"].rolling(78, min_periods=20).quantile(0.85)
     capped_vol = np.minimum(df["Volume"], vol_cap)
@@ -540,11 +546,15 @@ def compute_intraday_indicators(df):
     today_df = df[df["Date"] == today_date]
     if not today_df.empty:
         open_day = float(today_df["Open"].iloc[0])
+        df["Open_Day"] = open_day
+        df["Bars_Today"] = len(today_df)
         df["Day_Return_Pct"] = ((df["Close"] - open_day) / open_day) * 100.0
         orb_bars = today_df.iloc[:3]
         df["ORB_15_High"] = float(orb_bars["High"].max())
         df["ORB_15_Low"] = float(orb_bars["Low"].min())
     else:
+        df["Open_Day"] = df["Close"]
+        df["Bars_Today"] = 0
         df["Day_Return_Pct"] = 0.0
         df["ORB_15_High"] = np.nan
         df["ORB_15_Low"] = np.nan
@@ -552,7 +562,7 @@ def compute_intraday_indicators(df):
     return df
 
 # ==============================================================================
-# LOS 6 MOTORES CUANTITATIVOS V4.5 (APEX COMPOUNDER)
+# LOS 6 MOTORES CUANTITATIVOS V4.5.2 (CON ESCUDO DE APERTURA 15:50 - 16:00)
 # ==============================================================================
 def evaluate_symbol_v4(symbol, df, qqq_ret_pct, qqq_bullish, current_time):
     if df is None or len(df) < 35:
@@ -565,8 +575,14 @@ def evaluate_symbol_v4(symbol, df, qqq_ret_pct, qqq_bullish, current_time):
     live_price = float(live_bar["Close"])
     close_p = float(closed_bar["Close"])
     open_p = float(closed_bar["Open"])
+    open_day = float(live_bar["Open_Day"])
+    bars_today = int(live_bar["Bars_Today"])
     vwap_p = float(closed_bar["VWAP"])
     close_strength = float(closed_bar["Close_Strength"])
+
+    # ESCUDO ANTI-GAP & CRAP: La accion debe estar en verde respecto a su apertura de las 15:30
+    if live_price <= open_day or close_p <= open_day:
+        return None
 
     raw_atr = float(closed_bar["ATR"]) if not np.isnan(closed_bar["ATR"]) else (live_price * 0.008)
     atr_val = max(raw_atr, live_price * 0.0065)
@@ -587,16 +603,18 @@ def evaluate_symbol_v4(symbol, df, qqq_ret_pct, qqq_bullish, current_time):
     market_regime_permission = qqq_bullish or alpha_decouple_ok
 
     t_val = current_time.hour + (current_time.minute / 60.0)
-    is_breakout_window = (15.75 <= t_val < 18.00) or (19.50 <= t_val <= 21.25)
-    is_continuous_window = (15.75 <= t_val <= 21.25)
+    # Motores 1, 2, 3 y 5 exigen al menos las 16:00 ESP (6 velas limpias de hoy) para no leer medias de ayer
+    mature_day_indicators = (t_val >= 16.00 and bars_today >= 6)
+    is_breakout_window = ((16.00 <= t_val < 18.00) or (19.50 <= t_val <= 21.25)) and mature_day_indicators
+    is_continuous_window = (16.00 <= t_val <= 21.25) and mature_day_indicators
 
     signal_data = None
 
-    # 1. MOTOR 4: Ruptura de Apertura Confirmada (ORB-15m Sin Mecha) -> 15:45 a 16:50 ESP
-    if 15.75 <= t_val <= 16.83 and market_regime_permission and strong_bullish_candle and not_overextended:
+    # 1. MOTOR 4: Ruptura de Apertura Confirmada (ORB-15m Sin Mecha) -> Arranca a las 15:50 ESP (15.83)
+    if 15.83 <= t_val <= 16.83 and bars_today >= 4 and market_regime_permission and strong_bullish_candle and not_overextended:
         orb_high = float(closed_bar["ORB_15_High"])
         if not np.isnan(orb_high) and close_p > orb_high and live_price >= close_p * 0.999 and float(prev_closed["Close"]) <= orb_high:
-            if close_p > vwap_p and alpha_vs_qqq >= 0.30 and rvol >= 1.35 and 54 <= rsi14 <= 75:
+            if close_p > vwap_p and alpha_vs_qqq >= 0.35 and rvol >= 1.40 and 54 <= rsi14 <= 75:
                 signal_data = {
                     "engine": "Motor 4: Ruptura ORB-15m (Sin Mecha)",
                     "sl_mult": 1.35,
@@ -604,8 +622,8 @@ def evaluate_symbol_v4(symbol, df, qqq_ret_pct, qqq_bullish, current_time):
                     "high_conviction": True
                 }
 
-    # 2. MOTOR 6 (NUEVO V4.5): Opening Drive First Pullback (Retest de ORB_High / EMA-9 en 1a Hora)
-    if signal_data is None and 15.83 <= t_val <= 17.00 and market_regime_permission and strong_bullish_candle:
+    # 2. MOTOR 6: Opening Drive First Pullback (Retest de ORB_High / EMA-9) -> Arranca a las 15:55 ESP (15.91)
+    if signal_data is None and 15.91 <= t_val <= 17.00 and bars_today >= 5 and market_regime_permission and strong_bullish_candle:
         orb_high = float(closed_bar["ORB_15_High"])
         if not np.isnan(orb_high) and close_p > orb_high and alpha_vs_qqq >= 0.55 and ema9 > vwap_p:
             retested_orb = (float(closed_bar["Low"]) <= orb_high * 1.003) or (float(closed_bar["Low"]) <= ema9 * 1.002)
@@ -617,7 +635,7 @@ def evaluate_symbol_v4(symbol, df, qqq_ret_pct, qqq_bullish, current_time):
                     "high_conviction": True
                 }
 
-    # 3. MOTOR 3 (ACTIVO TODO EL DIA): Pullback Institucional a EMA-9 / EMA-21 en Lider Alpha
+    # 3. MOTOR 3 (ACTIVO 16:00 A 21:15): Pullback Institucional a EMA-9 / EMA-21 en Lider Alpha
     if signal_data is None and is_continuous_window and market_regime_permission and strong_bullish_candle:
         if alpha_vs_qqq >= 0.70 and ema9 >= ema21 * 0.999 and close_p > vwap_p and 46 <= rsi14 <= 69:
             touched_support = (float(prev_closed["Low"]) <= ema9 * 1.003) or (float(closed_bar["Low"]) <= ema9 * 1.003)
@@ -630,7 +648,7 @@ def evaluate_symbol_v4(symbol, df, qqq_ret_pct, qqq_bullish, current_time):
                     "high_conviction": (alpha_vs_qqq >= 1.25 and rvol >= 1.30)
                 }
 
-    # 4. MOTOR 5 (ACTIVO TODO EL DIA): Continuacion de Bandera Institucional (3-Bar Flag)
+    # 4. MOTOR 5 (ACTIVO 16:00 A 21:15): Continuacion de Bandera Institucional (3-Bar Flag solo de HOY)
     if signal_data is None and is_continuous_window and market_regime_permission and strong_bullish_candle and not_overextended:
         flag_high = float(closed_bar["Flag_3Bar_High"])
         if not np.isnan(flag_high) and alpha_vs_qqq >= 0.50 and ema9 > ema21 and close_p > vwap_p:
@@ -643,7 +661,7 @@ def evaluate_symbol_v4(symbol, df, qqq_ret_pct, qqq_bullish, current_time):
                         "high_conviction": (alpha_vs_qqq >= 1.10 and rvol >= 1.50)
                     }
 
-    # 5. MOTOR 2: Explosion de Volatilidad (TTM Squeeze Breakout) -> Mañana y Tarde (19:30+)
+    # 5. MOTOR 2: Explosion de Volatilidad (TTM Squeeze Breakout) -> 16:00-18:00 y 19:30-21:15
     if signal_data is None and is_breakout_window and market_regime_permission and strong_bullish_candle and not_overextended:
         if bool(closed_bar["Recent_Squeeze"]) and close_p > float(closed_bar["BB_Upper"]) and live_price >= close_p * 0.999:
             if close_p > vwap_p and alpha_vs_qqq >= 0.25 and rvol >= 1.25 and 53 <= rsi14 <= 74:
@@ -654,7 +672,7 @@ def evaluate_symbol_v4(symbol, df, qqq_ret_pct, qqq_bullish, current_time):
                     "high_conviction": (alpha_vs_qqq > 0.60 and rvol >= 1.55)
                 }
 
-    # 6. MOTOR 1: Impulso Institucional de Lider Sectorial -> Mañana y Tarde (19:30+)
+    # 6. MOTOR 1: Impulso Institucional de Lider Sectorial -> 16:00-18:00 y 19:30-21:15
     if signal_data is None and is_breakout_window and market_regime_permission and strong_bullish_candle and not_overextended:
         if alpha_vs_qqq >= 0.35 and rvol >= 1.35 and adx >= 23:
             if close_p > vwap_p and ema9 > ema21 and close_p > float(prev_closed["High"]) and live_price >= close_p * 0.999 and 55 <= rsi14 <= 73:
@@ -740,7 +758,6 @@ def monitor_open_positions(state, market_data):
             tp = float(pos["take_profit"])
             atr = float(pos.get("atr", abs(entry - sl) / 1.35))
 
-            # 1. Comprobar Take-Profit Final
             if curr_price >= tp or bar_high >= tp:
                 exit_p = max(curr_price, tp)
                 rec = register_closed_trade(state, symbol, exit_p, "🎯 TAKE-PROFIT FINAL ALCANZADO")
@@ -754,7 +771,6 @@ def monitor_open_positions(state, market_data):
                     )
                 continue
 
-            # 2. Comprobar Stop-Loss (Inicial o Trinquetes)
             if curr_price <= sl or bar_low <= sl:
                 exit_p = min(curr_price, sl)
                 if pos.get("trail2_triggered"):
@@ -775,7 +791,6 @@ def monitor_open_positions(state, market_data):
                     )
                 continue
 
-            # 3. Nivel 1 (+1.65x ATR): Cobro Parcial del 50% en Caja (si tiene >=2 acciones) + Escudo Break-Even Holgado (+0.20x ATR)
             be_trigger = float(pos.get("trail_1_trigger", entry + (1.65 * atr)))
             new_be_stop = float(pos.get("trail_1_stop", round(entry + (0.20 * atr), 2)))
             if not pos.get("be_triggered", False) and (curr_price >= be_trigger or bar_high >= be_trigger):
@@ -793,7 +808,7 @@ def monitor_open_positions(state, market_data):
                         f"💰 <b>¡COBRO PARCIAL (50%) + ESCUDO BREAK-EVEN EN {symbol}!</b> 💰\n\n"
                         f"El precio ha alcanzado el Nivel 1 (<code>{exec_p:.2f} $</code>).\n"
                         f"👉 <b>PASO 1 EN QUANTFURY:</b> Vende <b><code>{shares_to_sell} acciones</code></b> ahora mismo para meter <b>+{banked_usd:.2f} $ seguros en caja</b>.\n"
-                        f"👉 <b>PASO 2 EN QUANTFURY:</b> Sube el Stop Order de las <b><code>{rem_shares} acciones</code></b> restantes a <b><code>{new_be_stop:.2f} $</code></b> (deja aire para no ser barrido como en NOW e ir a por el TP de <code>{tp:.2f} $</code>)."
+                        f"👉 <b>PASO 2 EN QUANTFURY:</b> Sube el Stop Order de las <b><code>{rem_shares} acciones</code></b> restantes a <b><code>{new_be_stop:.2f} $</code></b> (deja aire para ir a por el TP de <code>{tp:.2f} $</code>)."
                     )
                 else:
                     save_state(state, push_to_git=True, msg=f"Trail 1 active {symbol}")
@@ -803,7 +818,6 @@ def monitor_open_positions(state, market_data):
                         f"👉 <b>ACCIÓN EN QUANTFURY:</b> Sube tu Stop Order de <code>{symbol}</code> a <b><code>{new_be_stop:.2f} $</code></b>."
                     )
 
-            # 4. Trinquete Nivel 2 Estructural (+2.35x ATR -> Stop a +1.50x ATR o bajo EMA-9)
             trail2_trigger = float(pos.get("trail_2_trigger", entry + (2.35 * atr)))
             structural_stop = round(max(entry + (1.50 * atr), min(ema9_closed * 0.998, curr_price - (0.75 * atr))), 2)
             if not pos.get("trail2_triggered", False) and (curr_price >= trail2_trigger or bar_high >= trail2_trigger):
@@ -816,7 +830,6 @@ def monitor_open_positions(state, market_data):
                     f"👉 <b>ACCIÓN EN QUANTFURY:</b> Sube el Stop Order de tus <code>{pos['shares']} acciones</code> a <b><code>{structural_stop:.2f} $</code></b>."
                 )
 
-            # 5. Detector Time-Stop (65 min sin despegar y bajo EMA-21)
             if not pos.get("be_triggered", False) and not pos.get("timestop_alerted", False):
                 opened_str = pos.get("opened_at", "")
                 if opened_str:
@@ -835,7 +848,7 @@ def monitor_open_positions(state, market_data):
             print(f"[WARN] Error vigilando {symbol}: {e}")
 
 # ==============================================================================
-# PROCESADOR DE COMANDOS Y BOTONES DE TELEGRAM
+# PROCESADOR DE COMANDOS Y RADAR HTML-SAFE
 # ==============================================================================
 def build_portfolio_report(state, market_data=None):
     eq = state["equity"]
@@ -852,7 +865,7 @@ def build_portfolio_report(state, market_data=None):
 
     open_pos = state.get("open_positions", {})
     lines = [
-        f"📊 <b>LIBRO CONTABLE QUANTFURY (APEX v4.5)</b>",
+        f"📊 <b>LIBRO CONTABLE QUANTFURY (APEX v4.5.2)</b>",
         f"• <b>Poder Total:</b> <code>{eq:,.2f} $</code> | <b>Libre:</b> <code>{free_bp:,.2f} $</code>",
         f"• <b>Beneficio/Pérdida Neta:</b> <code>{net_pnl:+,.2f} $ ({net_pct:+.2f}%)</code>",
         f"• <b>PnL Día (Cerrado + Flotante):</b> <code>{dd_today:+.2f}%</code> <i>(Cortafuegos en -2.0%)</i>",
@@ -884,7 +897,7 @@ def build_portfolio_report(state, market_data=None):
 
 def build_radar_report(market_data):
     if market_data is None:
-        return "⏳ Descargando datos de los 48 activos..."
+        return "⏳ Descargando datos de los 48 activos (repite /radar en 10s)..."
     try:
         df_qqq = compute_intraday_indicators(market_data[BENCHMARK])
         if df_qqq is None:
@@ -917,22 +930,22 @@ def build_radar_report(market_data):
 
         rankings.sort(key=lambda x: x["alpha"], reverse=True)
         top = rankings[:12]
-        regime_str = "🟢 ALCISTA (>VWAP)" if qqq_bull else "🟡 DESACOPLE ALPHA (QQQ < VWAP)"
+        regime_str = "🟢 ALCISTA (Sobre VWAP)" if qqq_bull else "🟡 DESACOPLE ALPHA (QQQ Bajo VWAP)"
 
         msg = [
-            f"🔭 <b>RADAR APEX V4.5 (48 ACTIVOS EN VIVO)</b>",
+            f"🔭 <b>RADAR APEX V4.5.2 (48 ACTIVOS EN VIVO)</b>",
             f"• <b>Oráculo QQQ:</b> <code>{qqq_ret:+.2f}% hoy</code> | {regime_str}",
             f"\n🏆 <b>TOP 12 LÍDERES DE FUERZA RELATIVA:</b>"
         ]
         for r in top:
-            vw_icon = "🟢>VWAP" if r["above_vwap"] else "🔴<VWAP"
+            vw_icon = "🟢&gt;VWAP" if r["above_vwap"] else "🔴&lt;VWAP"
             sq_icon = "🔥Sqz" if r["sqz"] else ""
             msg.append(
                 f"• <b>{r['sym']}</b> ({r['sector']}): <code>{r['price']:.2f}$</code> | Alpha <code>{r['alpha']:+.2f}%</code> | RVOL <code>{r['rvol']:.1f}x</code> | RSI <code>{r['rsi']:.0f}</code> | {vw_icon} {sq_icon}"
             )
         return "\n".join(msg)
     except Exception as e:
-        return f"⚠️ Error generando radar: {e}"
+        return f"⚠️ Error generando radar: {str(e)}"
 
 def process_telegram_updates(state, signals, market_data=None):
     if not TELEGRAM_BOT_TOKEN:
@@ -971,7 +984,7 @@ def process_telegram_updates(state, signals, market_data=None):
                     for h in reversed(hist):
                         ic = "🟢" if h["pnl_usd"] >= 0 else "🔴"
                         lines.append(
-                            f"{ic} <b>{h['symbol']}</b> ({h['shares']} acc.): <code>{h['entry_price']:.2f}$ -> {h['exit_price']:.2f}$</code> | <b>{h['pnl_usd']:+.2f}$ ({h['pnl_pct']:+.2f}%)</b> [{h['reason']}]"
+                            f"{ic} <b>{h['symbol']}</b> ({h['shares']} acc.): <code>{h['entry_price']:.2f}$ a {h['exit_price']:.2f}$</code> | <b>{h['pnl_usd']:+.2f}$ ({h['pnl_pct']:+.2f}%)</b> [{h['reason']}]"
                         )
                     send_telegram_message("\n".join(lines))
 
@@ -989,7 +1002,7 @@ def process_telegram_updates(state, signals, market_data=None):
                                 f"• <b>Tu Entrada Real:</b> <code>{pos['entry_price']:.2f} $</code>\n"
                                 f"• <b>Stop-Loss Ajustado:</b> <code>{pos['stop_loss']:.2f} $</code>\n"
                                 f"• <b>Take-Profit Ajustado:</b> <code>{pos['take_profit']:.2f} $</code>\n"
-                                f"• <b>Cobro Parcial 50% (+1.65 ATR):</b> Saltará en <code>{pos['trail_1_trigger']:.2f} $</code> -> Stop a <b><code>{pos['trail_1_stop']:.2f} $</code></b>"
+                                f"• <b>Cobro Parcial 50% (+1.65 ATR):</b> Saltará en <code>{pos['trail_1_trigger']:.2f} $</code> (Stop a <b><code>{pos['trail_1_stop']:.2f} $</code></b>)"
                             )
                         except ValueError:
                             send_telegram_message("⚠️ Formato: <code>/entrada SIMBOLO PRECIO</code>")
@@ -1014,7 +1027,7 @@ def process_telegram_updates(state, signals, market_data=None):
                                 f"• Riesgo por Bala (0.55% - 0.75%): <code>{new_cap * BASE_RISK_PCT:.2f} $ - {new_cap * HIGH_CONVICTION_RISK_PCT:.2f} $</code>"
                             )
                     except ValueError:
-                        send_telegram_message("⚠️ Formato: <code>/capital 1988.46</code>")
+                        send_telegram_message("⚠️ Formato: <code>/capital 2002.57</code>")
 
             elif low.startswith("/ajustar"):
                 parts = text.split()
@@ -1047,7 +1060,7 @@ def process_telegram_updates(state, signals, market_data=None):
                             ic = "🟢" if rec["pnl_usd"] >= 0 else "🔴"
                             send_telegram_message(
                                 f"{ic} <b>CIERRE REGISTRADO EN {sym}</b>\n"
-                                f"• <b>Entrada:</b> <code>{rec['entry_price']:.2f}$</code> -> <b>Salida:</b> <code>{rec['exit_price']:.2f}$</code>\n"
+                                f"• <b>Entrada:</b> <code>{rec['entry_price']:.2f}$</code> a <b>Salida:</b> <code>{rec['exit_price']:.2f}$</code>\n"
                                 f"• <b>PnL Total Operación:</b> <b>{rec['pnl_usd']:+.2f} $ ({rec['pnl_pct']:+.2f}%)</b>\n"
                                 f"• <b>Capital Actualizado:</b> <code>{state['equity']:,.2f} $</code>"
                             )
@@ -1142,11 +1155,12 @@ def process_telegram_updates(state, signals, market_data=None):
                     )
 
 # ==============================================================================
-# ESCANER CONTINUO V4.5 (48 ACTIVOS | 6 MOTORES | CORTAFUEGOS TOTAL FLOTANTE)
+# ESCANER CONTINUO V4.5.2 (CON ESCUDO DE APERTURA 15:50 ESP)
 # ==============================================================================
 def is_entry_window_open(curr_time):
     t = curr_time.hour + (curr_time.minute / 60.0)
-    return 15.75 <= t <= 21.25
+    # Bloqueo estricto hasta las 15:50 ESP (15.83) cuando cierra la 1a vela posterior al ORB-15m
+    return 15.83 <= t <= 21.25
 
 def scan_market_and_alert(state, signals, market_data):
     if market_data is None:
@@ -1156,7 +1170,6 @@ def scan_market_and_alert(state, signals, market_data):
     if not is_entry_window_open(now_m):
         return
 
-    # CORTAFUEGOS TOTAL V4.5: Bloquea si Cerradas + Flotantes <= -2.0% (-40$)
     if get_total_daily_drawdown_pct(state, market_data) <= MAX_DAILY_DRAWDOWN:
         return
 
@@ -1239,7 +1252,7 @@ def scan_market_and_alert(state, signals, market_data):
     scale_note = f"Vender {best['shares']//2} acc. en <code>{round(best['price'] + 1.65*best['atr'], 2):.2f} $</code>" if best["shares"] >= 2 else f"Subir Stop en <code>{round(best['price'] + 1.65*best['atr'], 2):.2f} $</code>"
 
     msg_text = (
-        f"🎯 <b>SEÑAL APEX V4.5 — {symbol} ({best['sector']})</b> 🎯\n"
+        f"🎯 <b>SEÑAL APEX V4.5.2 — {symbol} ({best['sector']})</b> 🎯\n"
         f"{conv_tag}\n"
         f"• <b>Motor:</b> <code>{best['engine']}</code>\n\n"
         f"🛒 <b>ORDEN EXACTA EN QUANTFURY:</b>\n"
@@ -1272,21 +1285,21 @@ def run_continuous_session():
     now_m = now_madrid()
     free_bp = get_free_buying_power(state)
     send_telegram_message(
-        f"🟢 <b>OMNI-SCANNER APEX V4.5 EN LÍNEA ({now_m.strftime('%H:%M:%S')} ESP)</b>\n"
+        f"🟢 <b>OMNI-SCANNER APEX V4.5.2 EN LÍNEA ({now_m.strftime('%H:%M:%S')} ESP)</b>\n"
         f"• <b>Poder Total:</b> <code>{state['equity']:,.2f} $</code> | <b>Libre:</b> <code>{free_bp:,.2f} $</code>\n"
-        f"• <b>Mejoras V4.5:</b> <code>Cobro Parcial 50% | DD Flotante -2% | 6 Motores</code>\n"
+        f"• <b>Escudo Apertura:</b> <code>ORB 15:50 | Continuación 16:00 | 48 Activos</code>\n"
         f"• <b>Comandos:</b> <code>/cartera</code>, <code>/radar</code>, <code>/entrada SIMB PRECIO</code>, <code>/cerrar SIMB PRECIO</code>"
     )
 
-    last_scan_ts = 0
-    cached_market_data = None
+    cached_market_data = fetch_omni_market_batch()
+    last_scan_ts = time.time()
 
     while True:
         now_m = now_madrid()
         t_val = now_m.hour + (now_m.minute / 60.0)
 
         if t_val >= 22.04:
-            save_state(state, push_to_git=True, msg="EOD Argon Quant v4.5 sync")
+            save_state(state, push_to_git=True, msg="EOD Argon Quant v4.5.2 sync")
             send_telegram_message(
                 f"🏁 <b>SESIÓN CERRADA EN WALL STREET (22:02 ESP)</b>\n\n"
                 + build_portfolio_report(state, cached_market_data)
@@ -1298,8 +1311,9 @@ def run_continuous_session():
         if time.time() - last_scan_ts >= 60:
             last_scan_ts = time.time()
             if 15.45 <= t_val <= 22.02:
-                cached_market_data = fetch_omni_market_batch()
-                if cached_market_data is not None:
+                new_data = fetch_omni_market_batch()
+                if new_data is not None:
+                    cached_market_data = new_data
                     monitor_open_positions(state, cached_market_data)
                     scan_market_and_alert(state, signals, cached_market_data)
 
