@@ -52,5 +52,23 @@
     "cap_used": 735.45,
     "risk_usd": 6.22,
     "risk_pct": 0.31
+  },
+  "SHOP_1792084530": {
+    "symbol": "SHOP",
+    "sector": "Software_HyperGrowth",
+    "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
+    "price": 172.49,
+    "vwap": 170.78,
+    "atr": 1.12,
+    "rvol": 1.43,
+    "rsi": 48.6,
+    "alpha": 4.41,
+    "stop_loss": 171.03,
+    "take_profit": 175.99,
+    "high_conviction": true,
+    "shares": 1,
+    "cap_used": 172.49,
+    "risk_usd": 1.46,
+    "risk_pct": 0.07
   }
 }
