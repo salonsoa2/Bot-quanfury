@@ -160,5 +160,23 @@
     "cap_used": 343.27,
     "risk_usd": 2.9,
     "risk_pct": 0.15
+  },
+  "PYPL_1792164331": {
+    "symbol": "PYPL",
+    "sector": "Cripto_Fintech",
+    "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
+    "price": 57.55,
+    "vwap": 57.51,
+    "atr": 0.37,
+    "rvol": 3.0,
+    "rsi": 63.8,
+    "alpha": 1.49,
+    "stop_loss": 57.06,
+    "take_profit": 58.72,
+    "high_conviction": true,
+    "shares": 8,
+    "cap_used": 460.4,
+    "risk_usd": 3.92,
+    "risk_pct": 0.2
   }
 }
