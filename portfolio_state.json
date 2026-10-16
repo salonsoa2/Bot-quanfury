@@ -1,33 +1,11 @@
 {
   "initial_capital": 2000.0,
-  "equity": 1981.54,
+  "equity": 1977.58,
   "peak_equity": 2000.0,
-  "max_drawdown_pct": -0.99,
+  "max_drawdown_pct": -1.12,
   "last_update_id": 599988626,
   "pending_signals": {},
-  "open_positions": {
-    "PYPL": {
-      "symbol": "PYPL",
-      "sector": "Cripto_Fintech",
-      "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
-      "shares": 8,
-      "initial_shares": 8,
-      "realized_partial_usd": 0.0,
-      "entry_price": 57.55,
-      "stop_loss": 57.06,
-      "initial_stop_loss": 57.06,
-      "take_profit": 58.72,
-      "atr": 0.37,
-      "trail_1_trigger": 58.16,
-      "trail_1_stop": 57.62,
-      "trail_2_trigger": 58.42,
-      "trail_2_stop": 58.1,
-      "be_triggered": false,
-      "trail2_triggered": false,
-      "timestop_alerted": true,
-      "opened_at": "2026-10-16 17:27:12"
-    }
-  },
+  "open_positions": {},
   "closed_trades": [
     {
       "symbol": "ABNB",
@@ -128,16 +106,16 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": 0.55,
-  "total_trades": 10,
+  "realized_pnl": -3.41,
+  "total_trades": 11,
   "wins": 5,
-  "losses": 5,
-  "consecutive_losses": 5,
+  "losses": 6,
+  "consecutive_losses": 6,
   "gross_profit": 19.01,
-  "gross_loss": 18.46,
+  "gross_loss": 22.42,
   "daily_pnl": {
     "2026-10-15": 19.01,
-    "2026-10-16": -18.46
+    "2026-10-16": -22.42
   },
   "trade_history": [
     {
@@ -259,6 +237,18 @@
       "pnl_pct": -0.87,
       "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
       "closed_at": "2026-10-16 18:42:08"
+    },
+    {
+      "symbol": "PYPL",
+      "sector": "Cripto_Fintech",
+      "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
+      "shares": 8,
+      "entry_price": 57.55,
+      "exit_price": 57.06,
+      "pnl_usd": -3.96,
+      "pnl_pct": -0.86,
+      "reason": "🛑 STOP-LOSS EJECUTADO",
+      "closed_at": "2026-10-16 19:16:44"
     }
   ],
   "cooldowns": {
@@ -271,7 +261,7 @@
     "ISRG": "2026-10-16T17:50:26.945997+02:00",
     "NVDA": "2026-10-16T17:35:36.183290+02:00",
     "JPM": "2026-10-16T18:55:59.703295+02:00",
-    "PYPL": "2026-10-16T17:50:30.682915+02:00"
+    "PYPL": "2026-10-16T19:46:44.420188+02:00"
   },
   "last_global_signal_ts": 1792165786.567736,
   "eod_alert_sent_date": ""
