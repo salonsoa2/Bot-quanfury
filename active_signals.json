@@ -178,5 +178,23 @@
     "cap_used": 460.4,
     "risk_usd": 3.92,
     "risk_pct": 0.2
+  },
+  "VST_1792165786": {
+    "symbol": "VST",
+    "sector": "Energia_IA_Industrial",
+    "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha)",
+    "price": 154.73,
+    "vwap": 153.63,
+    "atr": 1.01,
+    "rvol": 1.35,
+    "rsi": 54.8,
+    "alpha": 2.89,
+    "stop_loss": 153.42,
+    "take_profit": 157.87,
+    "high_conviction": true,
+    "shares": 3,
+    "cap_used": 464.19,
+    "risk_usd": 3.93,
+    "risk_pct": 0.2
   }
 }
