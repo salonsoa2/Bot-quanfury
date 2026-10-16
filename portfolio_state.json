@@ -1,32 +1,11 @@
 {
   "initial_capital": 2000.0,
-  "equity": 2000.0,
+  "equity": 1996.22,
   "peak_equity": 2000.0,
   "max_drawdown_pct": -0.99,
-  "last_update_id": 599988609,
+  "last_update_id": 599988611,
   "pending_signals": {},
   "open_positions": {
-    "UBER": {
-      "symbol": "UBER",
-      "sector": "Salud_Consumo_Banca",
-      "engine": "Motor 4: Ruptura ORB-15m (Sin Mecha) + [SEC Form 4]",
-      "shares": 6,
-      "initial_shares": 6,
-      "realized_partial_usd": 0.0,
-      "entry_price": 71.64,
-      "stop_loss": 71.01,
-      "initial_stop_loss": 71.01,
-      "take_profit": 73.15,
-      "atr": 0.47,
-      "trail_1_trigger": 72.42,
-      "trail_1_stop": 71.73,
-      "trail_2_trigger": 72.74,
-      "trail_2_stop": 72.34,
-      "be_triggered": false,
-      "trail2_triggered": false,
-      "timestop_alerted": false,
-      "opened_at": "2026-10-16 15:52:51"
-    },
     "ISRG": {
       "symbol": "ISRG",
       "sector": "Salud_Consumo_Banca",
@@ -149,15 +128,16 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": 19.01,
-  "total_trades": 5,
+  "realized_pnl": 15.23,
+  "total_trades": 6,
   "wins": 5,
-  "losses": 0,
-  "consecutive_losses": 0,
+  "losses": 1,
+  "consecutive_losses": 1,
   "gross_profit": 19.01,
-  "gross_loss": 0.0,
+  "gross_loss": 3.78,
   "daily_pnl": {
-    "2026-10-15": 19.01
+    "2026-10-15": 19.01,
+    "2026-10-16": -3.78
   },
   "trade_history": [
     {
@@ -219,6 +199,18 @@
       "pnl_pct": 0.32,
       "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
       "closed_at": "2026-10-15 21:45:58"
+    },
+    {
+      "symbol": "UBER",
+      "sector": "Salud_Consumo_Banca",
+      "engine": "Motor 4: Ruptura ORB-15m (Sin Mecha) + [SEC Form 4]",
+      "shares": 6,
+      "entry_price": 71.64,
+      "exit_price": 71.01,
+      "pnl_usd": -3.78,
+      "pnl_pct": -0.88,
+      "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
+      "closed_at": "2026-10-16 16:31:54"
     }
   ],
   "cooldowns": {
@@ -227,7 +219,7 @@
     "META": "2026-10-15T21:46:34.974795+02:00",
     "SHOP": "2026-10-15T20:59:00.498694+02:00",
     "COIN": "2026-10-15T22:07:54.253802+02:00",
-    "UBER": "2026-10-16T16:15:12.269783+02:00",
+    "UBER": "2026-10-16T16:56:54.918028+02:00",
     "ISRG": "2026-10-16T16:45:53.295863+02:00"
   },
   "last_global_signal_ts": 1792160454.0588937,
