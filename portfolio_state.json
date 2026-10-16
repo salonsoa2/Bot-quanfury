@@ -3,7 +3,7 @@
   "equity": 2000.0,
   "peak_equity": 2000.0,
   "max_drawdown_pct": -0.99,
-  "last_update_id": 599988606,
+  "last_update_id": 599988608,
   "pending_signals": {},
   "open_positions": {
     "UBER": {
@@ -26,6 +26,27 @@
       "trail2_triggered": false,
       "timestop_alerted": false,
       "opened_at": "2026-10-16 15:52:51"
+    },
+    "ISRG": {
+      "symbol": "ISRG",
+      "sector": "Salud_Consumo_Banca",
+      "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha) + [SEC Form 4]",
+      "shares": 1,
+      "initial_shares": 1,
+      "realized_partial_usd": 0.0,
+      "entry_price": 432.37,
+      "stop_loss": 428.72,
+      "initial_stop_loss": 428.72,
+      "take_profit": 441.14,
+      "atr": 2.81,
+      "trail_1_trigger": 437.01,
+      "trail_1_stop": 432.93,
+      "trail_2_trigger": 438.97,
+      "trail_2_stop": 436.58,
+      "be_triggered": false,
+      "trail2_triggered": false,
+      "timestop_alerted": false,
+      "opened_at": "2026-10-16 16:22:39"
     }
   },
   "closed_trades": [
@@ -206,8 +227,9 @@
     "META": "2026-10-15T21:46:34.974795+02:00",
     "SHOP": "2026-10-15T20:59:00.498694+02:00",
     "COIN": "2026-10-15T22:07:54.253802+02:00",
-    "UBER": "2026-10-16T16:15:12.269783+02:00"
+    "UBER": "2026-10-16T16:15:12.269783+02:00",
+    "ISRG": "2026-10-16T16:45:53.295863+02:00"
   },
-  "last_global_signal_ts": 1792158613.0837197,
+  "last_global_signal_ts": 1792160454.0588937,
   "eod_alert_sent_date": ""
 }

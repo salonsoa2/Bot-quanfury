@@ -106,5 +106,23 @@
     "cap_used": 429.84,
     "risk_usd": 3.78,
     "risk_pct": 0.19
+  },
+  "ISRG_1792160454": {
+    "symbol": "ISRG",
+    "sector": "Salud_Consumo_Banca",
+    "engine": "Motor 3: Pullback Institucional EMA-9 (Líder Alpha) + [SEC Form 4]",
+    "price": 432.37,
+    "vwap": 431.64,
+    "atr": 2.81,
+    "rvol": 2.71,
+    "rsi": 64.2,
+    "alpha": 1.46,
+    "stop_loss": 428.72,
+    "take_profit": 441.14,
+    "high_conviction": true,
+    "shares": 1,
+    "cap_used": 432.37,
+    "risk_usd": 3.65,
+    "risk_pct": 0.18
   }
 }
