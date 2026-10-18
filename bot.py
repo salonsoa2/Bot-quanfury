@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 # ==============================================================================
-# CONFIGURACION INSTITUCIONAL — ARGON QUANT V5.4 (MASTER GRADE EDITION)
+# CONFIGURACION INSTITUCIONAL — ARGON QUANT V5.5 (EARLY-IGNITION & FUEL GAUGE)
 # ==============================================================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
@@ -41,16 +41,18 @@ TRAIL_1_LOCK_R = 0.90               # Nivel 1 asegura +0.90R (~+3.80$ limpios) d
 TRAIL_2_TRIGGER_R = 2.05            # Nivel 2: Al ganar +2.05R (~+8.60$), acorrala el precio
 TRAIL_2_LOCK_R = 1.50               # Nivel 2 asegura +1.50R (~+6.30$ limpios)
 
-# Filtros Anti-Crisis, Anti-Climax y Banda de Entrada Valida V5.4
-MIN_STOP_DISTANCE_PCT = 0.0085      # Stop-Loss minimo 0.85%
+# Filtros de Ignicion Temprana y Medidor de Gasolina Diaria (Evita comprar acciones ya muy subidas)
+MIN_STOP_DISTANCE_PCT = 0.0082      # Stop-Loss minimo 0.82% (mas ceñido al entrar en el inicio del impulso)
 MAX_PANIC_ATR_PCT = 0.0135          # Si una accion tiene ATR > 1.35% cada 5m (Crash), bloquea por panico
-MAX_CLIMAX_BAR_ATR_MULT = 2.60      # Prohibido comprar velas gigantes de agotamiento (>2.6x ATR en 5m)
-MAX_ENTRY_CHASE_R = 0.25            # Si el precio ya subio > +0.25R sobre la senal, NO perseguir
+MAX_CLIMAX_BAR_ATR_MULT = 2.40      # Prohibido comprar velas gigantes ya estiradas (>2.4x ATR en 5m)
+MAX_ADR_USED_PCT = 72.0             # PROHIBIDO comprar si la accion ya consumio >72% de su rango diario (ADR)
+MAX_VWAP_EXTENSION_ATR = 1.65       # Rebajado de 2.20 a 1.65: prohibe comprar lejos del VWAP (solo cerca de la base)
+IGNITION_MAX_VWAP_ATR = 0.65        # Motor 1 (Ignicion Temprana): compra pegado al VWAP (<= 0.65x ATR)
+PULLBACK_MAX_EMA9_ATR = 0.70        # Motor 2 (Pullback Temprano): compra pegado a la EMA-9 (<= 0.70x ATR)
+BREAKOUT_MAX_EMA9_ATR = 1.20        # Motores 3 y 4: solo permite rupturas frescas que nazcan cerca de la base
+MAX_ENTRY_CHASE_R = 0.22            # Banda maxima para no perseguir precio en la app (+0.22R)
 SIGNAL_COOLDOWN_SECONDS = 600       # 10 minutos de enfriamiento entre compras
-MIN_CANDLE_CLOSE_STRENGTH = 0.58    # Vela cerrando en el 42% superior de su rango (sin mecha de rechazo)
-MAX_VWAP_EXTENSION_ATR = 2.20       # Tope de distancia al VWAP para no comprar agotamientos
-PULLBACK_MAX_EMA9_ATR = 0.85        # Motor 1 (Pullback): exige comprar cerca de la EMA-9 (<=0.85x ATR)
-BREAKOUT_MAX_EMA9_ATR = 1.50        # Motores 2, 3 y 4 (Rupturas): permite expansion natural hasta 1.50x ATR
+MIN_CANDLE_CLOSE_STRENGTH = 0.60    # Vela cerrando en el 40% superior de su rango (sin mecha de rechazo)
 MIN_MARKET_BREADTH_PCT = 42.0       # Amplitud estandar de mercado (% de activos sobre su VWAP)
 
 # Universo Universal de 55 Gigantes Liquidos (Todos los Sectores Institucionales)
@@ -90,7 +92,7 @@ def now_madrid():
 def today_str():
     return now_madrid().strftime("%Y-%m-%d")
 
-def git_sync_state(commit_msg="Auto-sync Argon Quant v5.4"):
+def git_sync_state(commit_msg="Auto-sync Argon Quant v5.5"):
     try:
         subprocess.run(["git", "config", "--global", "user.name", "argon-quant-bot"], check=False)
         subprocess.run(["git", "config", "--global", "user.email", "bot@argonquant.local"], check=False)
@@ -156,7 +158,7 @@ def load_state():
         "eod_alert_sent_date": ""
     }
 
-def save_state(state, push_to_git=False, msg="Sync portfolio state v5.4"):
+def save_state(state, push_to_git=False, msg="Sync portfolio state v5.5"):
     try:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2, ensure_ascii=False)
@@ -169,7 +171,11 @@ def load_signals():
     if os.path.exists(SIGNALS_FILE):
         try:
             with open(SIGNALS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
+                sigs = json.load(f)
+            # Limpia senales antiguas (>12h) para mantener el archivo ligero
+            now_ts = time.time()
+            clean_sigs = {k: v for k, v in sigs.items() if (now_ts - float(v.get("signal_ts", now_ts))) < 43200}
+            return clean_sigs
         except Exception:
             return {}
     return {}
@@ -295,7 +301,6 @@ def get_total_daily_drawdown_pct(state, indicator_cache=None):
     return total_today_usd / base_cap
 
 def recalculate_position_targets(pos, new_entry_price):
-    """Recalcula 1R y sincroniza el stop activo incluso si ya salto algun trinquete."""
     init_sl = float(pos.get("initial_stop_loss", pos["stop_loss"]))
     if new_entry_price <= init_sl:
         old_one_r = max(0.05, abs(float(pos["entry_price"]) - init_sl))
@@ -313,7 +318,6 @@ def recalculate_position_targets(pos, new_entry_price):
     pos["trail_2_trigger"] = round(new_entry_price + (TRAIL_2_TRIGGER_R * one_r), 2)
     pos["trail_2_stop"] = round(new_entry_price + (TRAIL_2_LOCK_R * one_r), 2)
 
-    # Sincroniza el stop_loss actual con el trinquete activo
     if pos.get("trail2_triggered", False):
         pos["stop_loss"] = pos["trail_2_stop"]
     elif pos.get("be_triggered", False):
@@ -483,7 +487,7 @@ def check_sec_form4_catalyst(symbol):
     return has_recent_form4
 
 # ==============================================================================
-# DESCARGA RAPIDA Y MOTOR MULTI-DIA V5.4 (CON RVOL MEDIANO ROBUSTO)
+# MOTOR DE INDICADORES V5.5 (CON CALCULO DE GASOLINA DIARIA ADR Y COMPRESION)
 # ==============================================================================
 def fetch_omni_market_batch():
     tickers_to_fetch = list(set(ALL_TICKERS + [BENCHMARK]))
@@ -524,7 +528,6 @@ def compute_intraday_indicators(df):
     df["Cum_TP_Vol"] = df.groupby("Date")["TP_Vol"].cumsum()
     df["VWAP"] = df["Cum_TP_Vol"] / df["Cum_Vol"]
 
-    # EMAs Multi-Timeframe: 5m (EMA-9/21), 1H (EMA-50) y 3 Dias Institucional (EMA-200 Anti-Crisis)
     df["EMA_9"] = df["Close"].ewm(span=9, adjust=False).mean()
     df["EMA_21"] = df["Close"].ewm(span=21, adjust=False).mean()
     df["EMA_50"] = df["Close"].ewm(span=50, adjust=False).mean()
@@ -541,6 +544,9 @@ def compute_intraday_indicators(df):
     low_close = np.where(same_day, (df["Low"] - prev_close).abs(), high_low * 1.15)
     tr = pd.concat([high_low, pd.Series(high_close, index=df.index), pd.Series(low_close, index=df.index)], axis=1).max(axis=1)
     df["ATR"] = tr.rolling(14).mean()
+
+    # Compresion de las 3 velas previas (Detecta cuando la accion descansa estrecha antes de despegar)
+    df["Prev_3Bar_Avg_Range"] = df["Bar_Range"].shift(1).rolling(3, min_periods=2).mean()
 
     delta = df["Close"].diff()
     gain14 = delta.where(delta > 0, 0.0).rolling(14).mean()
@@ -568,20 +574,34 @@ def compute_intraday_indicators(df):
     df["Recent_Squeeze"] = df["Squeeze_On"].rolling(4).max() > 0
 
     df["Flag_3Bar_High"] = df.groupby("Date")["High"].transform(lambda s: s.shift(1).rolling(3, min_periods=3).max())
+    df["Flag_3Bar_Low"] = df.groupby("Date")["Low"].transform(lambda s: s.shift(1).rolling(3, min_periods=3).min())
 
-    # V5.4: Mediana Movil de Volumen (Inmune a la distorsion de los picos de las 15:30 y 22:00)
     vol_median_base = df["Volume"].rolling(55, min_periods=18).median().replace(0, np.nan)
     df["RVOL"] = (df["Volume"] / vol_median_base).fillna(1.0)
+
+    # Calculo del ADR (Rango Diario Medio de los 5 dias) y Gasolina Consumida Hoy
+    daily_stats = df.groupby("Date").agg(d_high=("High", "max"), d_low=("Low", "min"))
+    daily_ranges = (daily_stats["d_high"] - daily_stats["d_low"]).replace(0, np.nan)
+    avg_daily_range = float(daily_ranges.mean()) if not daily_ranges.empty else float(df["Close"].iloc[-1] * 0.025)
 
     today_date = df["Date"].iloc[-1]
     today_df = df[df["Date"] == today_date]
     if not today_df.empty:
         open_day = float(today_df["Open"].iloc[0])
+        today_low = float(today_df["Low"].min())
+        curr_c = float(today_df["Close"].iloc[-1])
+        adr_safe = max(avg_daily_range, curr_c * 0.018)
+        adr_used_pct = ((curr_c - today_low) / adr_safe) * 100.0
+
         df["Open_Day"] = open_day
+        df["Today_Low"] = today_low
+        df["ADR_Used_Pct"] = round(min(100.0, max(0.0, adr_used_pct)), 1)
         df["Bars_Today"] = len(today_df)
         df["Day_Return_Pct"] = ((df["Close"] - open_day) / open_day) * 100.0
     else:
         df["Open_Day"] = df["Close"]
+        df["Today_Low"] = df["Low"]
+        df["ADR_Used_Pct"] = 50.0
         df["Bars_Today"] = 0
         df["Day_Return_Pct"] = 0.0
 
@@ -618,7 +638,6 @@ def build_indicator_cache_and_breadth(market_data):
     return cache, breadth
 
 def is_qqq_truly_bullish(df_qqq):
-    """Verifica que el QQQ este sobre VWAP, EMA9 >= EMA21, sin perder su EMA9 y sin volatilidad de panico."""
     if df_qqq is None or len(df_qqq) < 6:
         return False, 0.0
     qqq_last = df_qqq.iloc[-1]
@@ -642,7 +661,7 @@ def is_qqq_truly_bullish(df_qqq):
     return bullish, qqq_ret
 
 # ==============================================================================
-# MOTOR DE EVALUACION UNIVERSAL V5.4 (FILTRO ANTI-CLIMAX + BANDA ENTRADA VALIDA)
+# MOTOR DE EVALUACION V5.5 (CAZA EL INICIO DE LA SUBIDA + MEDIDOR DE GASOLINA)
 # ==============================================================================
 def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, current_time):
     if df is None or len(df) < 55:
@@ -660,12 +679,18 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
     vwap_p = float(closed_bar["VWAP"])
     close_strength = float(closed_bar["Close_Strength"])
     closed_bar_range = float(closed_bar["Bar_Range"])
+    adr_used_pct = float(live_bar["ADR_Used_Pct"])
+    fuel_left_pct = round(max(0.0, 100.0 - adr_used_pct), 0)
 
     if live_price <= open_day or close_p <= open_day or bars_today < 6:
         return None
 
+    # FILTRO DE GASOLINA DIARIA V5.5:
+    # Si la accion ya consumio mas del 72% de su rango diario (ya subio demasiado), PROHIBIDO comprar
+    if adr_used_pct > MAX_ADR_USED_PCT:
+        return None
+
     raw_atr = float(closed_bar["ATR"]) if not np.isnan(closed_bar["ATR"]) else (live_price * 0.008)
-    # Filtro Anti-Panico Individual y Filtro Anti-Climax (No comprar velas de agotamiento > 2.6x ATR)
     if (raw_atr / live_price) > MAX_PANIC_ATR_PCT:
         return None
     if raw_atr > 0 and (closed_bar_range / raw_atr) > MAX_CLIMAX_BAR_ATR_MULT:
@@ -681,24 +706,17 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
     ema50 = float(closed_bar["EMA_50"])
     ema200 = float(closed_bar["EMA_200"])
     prev_ema9 = float(prev_closed["EMA_9"])
-    prev_ema21 = float(prev_closed["EMA_21"])
+    prev_ema50 = float(prev_closed["EMA_50"])
     day_ret = float(live_bar["Day_Return_Pct"])
     alpha_vs_qqq = round(day_ret - qqq_ret_pct, 2)
 
-    macro_trend_ok = (close_p > ema200) or (ema50 >= ema200 * 0.998 and alpha_vs_qqq >= 1.25 and rvol >= 1.50)
-    htf_uptrend_ok = (
-        macro_trend_ok
-        and (close_p > ema50)
-        and (ema21 >= ema50 * 0.999)
-        and (ema9 > ema21)
-        and (ema9 >= prev_ema9)
-        and (ema21 >= prev_ema21 * 0.9998)
-    )
-    if not htf_uptrend_ok or close_p <= vwap_p:
+    # Estructura Mayor Sana (Precio sobre EMA-200 y EMA-50 en ascenso)
+    macro_trend_ok = (close_p > ema200) and (close_p > ema50) and (ema50 >= prev_ema50 * 0.9998)
+    if not macro_trend_ok or close_p <= vwap_p or ema9 < ema21 * 0.9995 or ema9 < prev_ema9:
         return None
 
     market_permission = (qqq_bullish and breadth_pct >= MIN_MARKET_BREADTH_PCT) or (
-        qqq_bullish and breadth_pct >= 35.0 and alpha_vs_qqq >= 0.95 and rvol >= 1.40 and close_p > ema200
+        qqq_bullish and breadth_pct >= 35.0 and alpha_vs_qqq >= 0.80 and rvol >= 1.35
     )
     if not market_permission:
         return None
@@ -707,6 +725,7 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
     ema9_dist_atr = (live_price - ema9) / atr_val if atr_val > 0 else 0.0
     strong_bullish_candle = (close_p > open_p and close_strength >= MIN_CANDLE_CLOSE_STRENGTH)
 
+    # Prohibido comprar lejos del VWAP (garantiza entrar cerca de la base institucional)
     if not strong_bullish_candle or not (0.0 <= vwap_dist_atr <= MAX_VWAP_EXTENSION_ATR):
         return None
 
@@ -716,47 +735,59 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
 
     signal_data = None
 
-    # 1. MOTOR 1: Pullback Institucional a EMA-9
-    if is_continuous_window and ema9_dist_atr <= PULLBACK_MAX_EMA9_ATR and alpha_vs_qqq >= 0.55 and 48 <= rsi14 <= 68:
-        touched_support = (float(prev_closed["Low"]) <= ema9 * 1.0025) or (float(closed_bar["Low"]) <= ema9 * 1.0025)
-        reclaimed_ema9 = (close_p > ema9 and live_price >= close_p * 0.999 and float(closed_bar["Low"]) >= ema21 * 0.998)
-        if touched_support and reclaimed_ema9 and rvol >= 1.15:
+    # 1. MOTOR 1 (NUEVO ESTRELLA V5.5): Ignicion Temprana en VWAP / EMA-21 (Caza el Inicio Exacto de la Subida)
+    # Detecta cuando la accion apoya justo en el VWAP/EMA-21 y lanza la 1a vela de volumen institucional (con <55% de gasolina gastada)
+    if is_continuous_window and vwap_dist_atr <= IGNITION_MAX_VWAP_ATR and adr_used_pct <= 58.0 and 46 <= rsi14 <= 64:
+        tested_vwap_or_ema21 = (
+            float(prev_closed["Low"]) <= (vwap_p * 1.003)
+            or float(closed_bar["Low"]) <= (vwap_p * 1.003)
+            or float(closed_bar["Low"]) <= (ema21 * 1.0025)
+        )
+        fresh_launch = (close_p > ema9 and close_p > vwap_p and live_price >= close_p * 0.999)
+        if tested_vwap_or_ema21 and fresh_launch and rvol >= 1.25 and alpha_vs_qqq >= 0.25:
             signal_data = {
-                "engine": "Motor 1: Pullback Institucional EMA-9",
-                "sl_mult": 1.35,
-                "high_conviction": (alpha_vs_qqq >= 1.15 and rvol >= 1.35)
+                "engine": "Motor 1: Ignición Temprana en VWAP (Inicio de Subida)",
+                "sl_mult": 1.28,
+                "priority_bonus": 2.0,
+                "high_conviction": (rvol >= 1.45 and fuel_left_pct >= 50)
             }
 
-    # 2. MOTOR 2: Continuacion de Bandera Institucional
+    # 2. MOTOR 2: Pullback Temprano a EMA-9 tras Compresion Estrecha
+    if signal_data is None and is_continuous_window and ema9_dist_atr <= PULLBACK_MAX_EMA9_ATR and 48 <= rsi14 <= 66:
+        touched_ema9 = (float(prev_closed["Low"]) <= ema9 * 1.002) or (float(closed_bar["Low"]) <= ema9 * 1.002)
+        reclaimed = (close_p > ema9 and live_price >= close_p * 0.999 and float(closed_bar["Low"]) >= ema21 * 0.998)
+        if touched_ema9 and reclaimed and alpha_vs_qqq >= 0.45 and rvol >= 1.15:
+            signal_data = {
+                "engine": "Motor 2: Pullback Temprano EMA-9 (Base Fresca)",
+                "sl_mult": 1.32,
+                "priority_bonus": 1.5,
+                "high_conviction": (alpha_vs_qqq >= 0.95 and rvol >= 1.35)
+            }
+
+    # 3. MOTOR 3: Ruptura de Micro-Cajita Pegada a la Media (3-Bar Tight Coil Breakout)
     if signal_data is None and is_continuous_window and ema9_dist_atr <= BREAKOUT_MAX_EMA9_ATR:
         flag_high = float(closed_bar["Flag_3Bar_High"])
-        if not np.isnan(flag_high) and alpha_vs_qqq >= 0.50 and 53 <= rsi14 <= 72:
+        prev_3bar_avg = float(closed_bar["Prev_3Bar_Avg_Range"]) if not np.isnan(closed_bar["Prev_3Bar_Avg_Range"]) else atr_val
+        is_tight_coil = prev_3bar_avg <= (1.10 * atr_val)  # Las 3 velas previas fueron tranquilas/comprimidas
+        if not np.isnan(flag_high) and is_tight_coil and alpha_vs_qqq >= 0.45 and 52 <= rsi14 <= 69:
             if close_p > flag_high and live_price >= close_p * 0.999 and float(prev_closed["Close"]) <= flag_high:
                 if rvol >= 1.25:
                     signal_data = {
-                        "engine": "Motor 2: Continuación Bandera (2ª Ola)",
+                        "engine": "Motor 3: Despegue de Compresión (Micro-Coil)",
                         "sl_mult": 1.35,
-                        "high_conviction": (alpha_vs_qqq >= 1.05 and rvol >= 1.50)
+                        "priority_bonus": 1.2,
+                        "high_conviction": (rvol >= 1.50 and fuel_left_pct >= 40)
                     }
 
-    # 3. MOTOR 3: Explosion de Volatilidad (TTM Squeeze Breakout)
+    # 4. MOTOR 4: Explosion de Volatilidad (Squeeze Naciente Cerca del VWAP)
     if signal_data is None and is_breakout_window and ema9_dist_atr <= BREAKOUT_MAX_EMA9_ATR:
         if bool(closed_bar["Recent_Squeeze"]) and close_p > float(closed_bar["BB_Upper"]) and live_price >= close_p * 0.999:
-            if alpha_vs_qqq >= 0.40 and rvol >= 1.35 and 54 <= rsi14 <= 74:
+            if alpha_vs_qqq >= 0.40 and rvol >= 1.35 and 53 <= rsi14 <= 70:
                 signal_data = {
-                    "engine": "Motor 3: Explosión Volatilidad (Squeeze)",
-                    "sl_mult": 1.38,
-                    "high_conviction": (alpha_vs_qqq > 0.80 and rvol >= 1.60)
-                }
-
-    # 4. MOTOR 4: Impulso Institucional de Lider Sectorial
-    if signal_data is None and is_breakout_window and ema9_dist_atr <= BREAKOUT_MAX_EMA9_ATR:
-        if alpha_vs_qqq >= 0.45 and rvol >= 1.40 and adx >= 24:
-            if close_p > float(prev_closed["High"]) and live_price >= close_p * 0.999 and 55 <= rsi14 <= 73:
-                signal_data = {
-                    "engine": "Motor 4: Impulso Líder Sectorial",
-                    "sl_mult": 1.38,
-                    "high_conviction": (alpha_vs_qqq > 0.85 and rvol >= 1.65)
+                    "engine": "Motor 4: Explosión Volatilidad Temprana (Squeeze)",
+                    "sl_mult": 1.35,
+                    "priority_bonus": 1.0,
+                    "high_conviction": (rvol >= 1.60 and fuel_left_pct >= 40)
                 }
 
     if not signal_data:
@@ -769,13 +800,21 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
 
     raw_stop_dist = signal_data["sl_mult"] * atr_val
     min_stop_dist = live_price * MIN_STOP_DISTANCE_PCT
-    ema21_buffer_dist = max(0.0, (live_price - (ema21 * 0.9978)))
+    ema21_buffer_dist = max(0.0, (live_price - (ema21 * 0.9980)))
     one_r_dist = max(raw_stop_dist, min_stop_dist, ema21_buffer_dist)
 
     stop_loss = round(live_price - one_r_dist, 2)
     take_profit = round(live_price + (TARGET_TP_R_MULT * one_r_dist), 2)
-    min_valid_entry = round(max(ema9 * 0.9985, live_price - (0.20 * one_r_dist)), 2)
+    min_valid_entry = round(max(ema9 * 0.9985, live_price - (0.18 * one_r_dist)), 2)
     max_valid_entry = round(live_price + (MAX_ENTRY_CHASE_R * one_r_dist), 2)
+
+    # Puntuacion de Ignicion Fresca: premia tener mucha gasolina restante, estar cerca del VWAP y alto RVOL
+    freshness_score = (
+        signal_data["priority_bonus"]
+        + (fuel_left_pct / 25.0)
+        + min(3.0, rvol)
+        - vwap_dist_atr
+    )
 
     return {
         "symbol": symbol,
@@ -790,6 +829,8 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
         "rvol": round(rvol, 2),
         "rsi": round(rsi14, 1),
         "alpha": alpha_vs_qqq,
+        "fuel_left_pct": int(fuel_left_pct),
+        "freshness_score": round(freshness_score, 2),
         "stop_loss": stop_loss,
         "take_profit": take_profit,
         "high_conviction": signal_data["high_conviction"],
@@ -797,7 +838,7 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
     }
 
 # ==============================================================================
-# GESTION DE POSICIONES ABIERTAS V5.4 (SIN HUECO CIEGO DE 5M ENTRE VELAS)
+# GESTION DE POSICIONES ABIERTAS V5.5 (SIN HUECO CIEGO DE 5M ENTRE VELAS)
 # ==============================================================================
 def get_position_opened_ts(pos):
     if "opened_ts" in pos and float(pos["opened_ts"]) > 0:
@@ -850,7 +891,6 @@ def monitor_open_positions(state, indicator_cache):
             tp = float(pos["take_profit"])
             one_r = float(pos.get("one_r", max(0.05, abs(entry - init_sl))))
 
-            # V5.4: Evalua tanto la vela en curso como la vela recién cerrada si nacieron DESPUES de la entrada
             opened_ts = get_position_opened_ts(pos)
             last_bar_ts = last_bar.name.timestamp() if hasattr(last_bar.name, "timestamp") else 0.0
             closed_bar_ts = closed_bar.name.timestamp() if hasattr(closed_bar.name, "timestamp") else 0.0
@@ -1014,9 +1054,9 @@ def compute_quant_audit_metrics(state):
     elif expectancy_usd > 0 and pf >= 1.65:
         verdict = "🟢 BOT SÓLIDO & RENTABLE (Ventaja Estadística Positiva)"
     elif expectancy_usd > 0:
-        verdict = "🟡 RENTABLE EN AJUSTE (Subiendo R:R con Múltiplos V5.4)"
+        verdict = "🟡 RENTABLE EN AJUSTE (Subiendo R:R con Ignición Temprana V5.5)"
     else:
-        verdict = "🔴 EN RACHA ADVERSA (Escudos Master V5.4 Activos)"
+        verdict = "🔴 EN RACHA ADVERSA (Escudos Early-Ignition V5.5 Activos)"
 
     return {
         "total": total, "wins": w_count, "losses": l_count, "wr": wr,
@@ -1071,7 +1111,7 @@ def build_portfolio_report(state, indicator_cache=None):
 
     open_pos = state.get("open_positions", {})
     lines = [
-        f"📊 <b>LIBRO CONTABLE QUANTFURY (MASTER v5.4)</b>",
+        f"📊 <b>LIBRO CONTABLE QUANTFURY (EARLY-IGNITION v5.5)</b>",
         f"• <b>Poder Total:</b> <code>{eq:,.2f} $</code> | <b>Libre:</b> <code>{free_bp:,.2f} $</code>",
         f"• <b>PnL Cuenta Actual:</b> <code>{net_pnl:+,.2f} $ ({net_pct:+.2f}%)</code>",
         f"• <b>PnL Día (Cerrado + Flotante):</b> <code>{dd_today:+.2f}%</code> <i>(Tope -0.85%)</i>",
@@ -1118,44 +1158,42 @@ def build_radar_report(indicator_cache, breadth_pct):
             live_b = df_s.iloc[-1]
             alpha = float(live_b["Day_Return_Pct"]) - qqq_ret
             rvol = max(float(closed_b["RVOL"]), float(live_b["RVOL"]))
+            fuel_left = int(max(0.0, 100.0 - float(live_b["ADR_Used_Pct"])))
             htf_ok = (
                 float(closed_b["Close"]) > float(closed_b["EMA_50"])
                 and float(closed_b["Close"]) > float(closed_b["EMA_200"])
-                and float(closed_b["EMA_21"]) >= float(closed_b["EMA_50"]) * 0.999
             )
             rankings.append({
                 "sym": sym,
-                "sector": TICKER_TO_SECTOR.get(sym, ""),
                 "price": float(live_b["Close"]),
                 "alpha": alpha,
                 "rvol": rvol,
-                "rsi": float(closed_b["RSI_14"]),
+                "fuel": fuel_left,
                 "htf_ok": htf_ok,
                 "above_vwap": float(live_b["Close"]) > float(closed_b["VWAP"])
             })
 
-        rankings.sort(key=lambda x: x["alpha"], reverse=True)
+        # El radar ordena priorizando acciones con tendencia 1H, volumen y gasolina disponible
+        rankings.sort(key=lambda x: (1 if (x["above_vwap"] and x["htf_ok"] and x["fuel"] >= 28) else 0, x["rvol"], x["alpha"]), reverse=True)
         top = rankings[:12]
         regime_str = "🟢 MERCADO SANO (Permiso Activo)" if (qqq_bull and breadth_pct >= 35.0) else "🛑 ESCUDO DEFENSIVO ACTIVO (QQQ o Amplitud Débil)"
 
         msg = [
-            f"🔭 <b>RADAR MASTER V5.4 (55 ACTIVOS | RVOL MEDIANO)</b>",
+            f"🔭 <b>RADAR EARLY-IGNITION V5.5 (CAZADOR DE INICIO)</b>",
             f"• <b>QQQ:</b> <code>{qqq_ret:+.2f}%</code> | <b>Amplitud (&gt;VWAP):</b> <code>{breadth_pct:.1f}%</code>",
             f"• <b>Estado:</b> {regime_str}",
-            f"\n🏆 <b>TOP 12 LÍDERES DE FUERZA RELATIVA:</b>"
+            f"\n🏆 <b>TOP 12 CANDIDATOS CON GASOLINA VIRGEN:</b>"
         ]
         for r in top:
             vw_icon = "🟢&gt;VWAP" if r["above_vwap"] else "🔴&lt;VWAP"
-            htf_icon = "📈MTF-OK" if r["htf_ok"] else "⚠️Bajo-EMA200"
             msg.append(
-                f"• <b>{r['sym']}</b>: <code>{r['price']:.2f}$</code> | Alpha <code>{r['alpha']:+.2f}%</code> | RVOL <code>{r['rvol']:.1f}x</code> | {vw_icon} | {htf_icon}"
+                f"• <b>{r['sym']}</b>: <code>{r['price']:.2f}$</code> | RVOL <code>{r['rvol']:.1f}x</code> | ⛽Gasolina: <code>{r['fuel']}%</code> | Alpha <code>{r['alpha']:+.2f}%</code> | {vw_icon}"
             )
         return "\n".join(msg)
     except Exception as e:
         return f"⚠️ Error generando radar: {str(e)}"
 
 def evaluate_signal_still_valid(sig, indicator_cache):
-    """Comprueba en tiempo real si una senal sigue dentro de la banda de entrada valida."""
     sym = sig["symbol"]
     if not indicator_cache or sym not in indicator_cache:
         return "⏳ Datos actualizándose, vuelve a pulsar en 5 segundos."
@@ -1165,14 +1203,14 @@ def evaluate_signal_still_valid(sig, indicator_cache):
     curr_p = float(df_s["Close"].iloc[-1])
     ema9_p = float(df_s["EMA_9"].iloc[-1])
     vwap_p = float(df_s["VWAP"].iloc[-1])
-    min_v = float(sig.get("min_valid_entry", sig["price"] - 0.20 * sig["one_r"]))
-    max_v = float(sig.get("max_valid_entry", sig["price"] + 0.25 * sig["one_r"]))
+    min_v = float(sig.get("min_valid_entry", sig["price"] - 0.18 * sig["one_r"]))
+    max_v = float(sig.get("max_valid_entry", sig["price"] + 0.22 * sig["one_r"]))
 
     if curr_p > max_v:
-        return f"🔴 YA SE ESCAPÓ: {sym} cotiza a {curr_p:.2f}$ (Máximo válido era {max_v:.2f}$). No persigas el precio."
+        return f"🔴 YA SE ESCAPÓ: {sym} cotiza a {curr_p:.2f}$ (Máximo válido para no comprar caro era {max_v:.2f}$)."
     if curr_p < min_v or curr_p < vwap_p or curr_p < (ema9_p * 0.998):
-        return f"🔴 PERDIÓ SOPORTE: {sym} cayó a {curr_p:.2f}$ (bajo su rango {min_v:.2f}$). Descártala."
-    return f"🟢 SIGUE VÁLIDA EN VIVO: {sym} cotiza a {curr_p:.2f}$ (Dentro de banda {min_v:.2f}$ - {max_v:.2f}$). Puedes entrar."
+        return f"🔴 PERDIÓ SOPORTE: {sym} cayó a {curr_p:.2f}$ (bajo su arranque {min_v:.2f}$). Descártala."
+    return f"🟢 EN ZONA DE INICIO VÁLIDA: {sym} cotiza a {curr_p:.2f}$ (Dentro de banda {min_v:.2f}$ - {max_v:.2f}$). Puedes entrar."
 
 def process_telegram_updates(state, signals, indicator_cache=None, breadth_pct=50.0):
     if not TELEGRAM_BOT_TOKEN:
@@ -1388,7 +1426,7 @@ def process_telegram_updates(state, signals, indicator_cache=None, breadth_pct=5
                     )
 
 # ==============================================================================
-# ESCANER MASTER V5.4 (CON BANDA DE ENTRADA VALIDA Y BOTON DE VERIFICACION)
+# ESCANER EARLY-IGNITION V5.5 (ORDENA POR FRESCURA DE DESPEGUE Y GASOLINA)
 # ==============================================================================
 def is_entry_window_open(curr_time):
     t = curr_time.hour + (curr_time.minute / 60.0)
@@ -1466,7 +1504,8 @@ def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
     if not candidates:
         return
 
-    candidates.sort(key=lambda x: (1 if x["high_conviction"] else 0, x["alpha"], x["rvol"]), reverse=True)
+    # V5.5: Prioriza la accion que esta iniciando el movimiento con mas gasolina restante (freshness_score)
+    candidates.sort(key=lambda x: (1 if x["high_conviction"] else 0, x["freshness_score"], x["rvol"]), reverse=True)
     best = candidates[0]
     symbol = best["symbol"]
 
@@ -1488,9 +1527,10 @@ def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
     expected_tp_usd = round((best["take_profit"] - best["price"]) * best["shares"], 2)
 
     msg_text = (
-        f"🎯 <b>SEÑAL MASTER V5.4 — {symbol} ({best['sector']})</b> 🎯\n"
+        f"🎯 <b>SEÑAL EARLY-IGNITION V5.5 — {symbol} ({best['sector']})</b> 🎯\n"
         f"{conv_tag}\n"
-        f"• <b>Motor:</b> <code>{best['engine']}</code>\n\n"
+        f"• <b>Motor:</b> <code>{best['engine']}</code>\n"
+        f"• <b>⛽ Gasolina Diaria Virgen:</b> <b><code>{best['fuel_left_pct']}% de recorrido libre hoy</code></b>\n\n"
         f"🛒 <b>ORDEN EXACTA EN QUANTFURY:</b>\n"
         f"• <b>Acción:</b> <b>COMPRAR (LONG) <code>{best['shares']} acciones</code></b> de <b>{symbol}</b>\n"
         f"• <b>Precio Ref.:</b> <code>{best['price']:.2f} $</code>\n"
@@ -1501,8 +1541,8 @@ def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
         f"• 🟢 <b>Escudo Lateral (+1.15R):</b> En <code>{t0_trigger:.2f} $</code> subir Stop a <code>{t0_stop:.2f} $ (+0.25R)</code>\n"
         f"• 🛡️ <b>Trinquete 1 (+1.65R):</b> En <code>{t1_trigger:.2f} $</code> subir Stop a <code>{t1_stop:.2f} $ (+0.90R)</code>\n"
         f"• 🎯 <b>Take-Profit (+2.40R):</b> <b><code>{best['take_profit']:.2f} $</code></b> <i>(Ganancia: +{expected_tp_usd:.2f} $)</i>\n\n"
-        f"📊 <b>Métricas MTF:</b>\n"
-        f"• Alpha: <code>{best['alpha']:+.2f}%</code> | RVOL: <code>{best['rvol']:.2f}x</code> | Amplitud: <code>{best['breadth_pct']:.0f}%</code>"
+        f"📊 <b>Métricas de Ignición:</b>\n"
+        f"• RVOL: <code>{best['rvol']:.2f}x</code> | Alpha: <code>{best['alpha']:+.2f}%</code> | Amplitud: <code>{best['breadth_pct']:.0f}%</code>"
     )
 
     kb = {
@@ -1519,7 +1559,7 @@ def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
     send_telegram_message(msg_text, reply_markup=kb)
 
 # ==============================================================================
-# BUCLE CONTINUO DE SESION V5.4
+# BUCLE CONTINUO DE SESION V5.5
 # ==============================================================================
 def run_continuous_session():
     state = load_state()
@@ -1529,9 +1569,9 @@ def run_continuous_session():
     free_bp = get_free_buying_power(state)
     m = compute_quant_audit_metrics(state)
     send_telegram_message(
-        f"🟢 <b>OMNI-SCANNER MASTER V5.4 EN LÍNEA ({now_m.strftime('%H:%M:%S')} ESP)</b>\n"
+        f"🟢 <b>OMNI-SCANNER EARLY-IGNITION V5.5 EN LÍNEA ({now_m.strftime('%H:%M:%S')} ESP)</b>\n"
         f"• <b>Poder Total:</b> <code>{state['equity']:,.2f} $</code> | <b>Libre:</b> <code>{free_bp:,.2f} $</code>\n"
-        f"• <b>Mejoras V5.4:</b> <code>RVOL Mediano | Banda Precio Válido | Anti-Clímax</code>\n"
+        f"• <b>Mejoras V5.5:</b> <code>Ignición VWAP | ⛽Medidor Gasolina ADR | Cero Compras Tardías</code>\n"
         f"• <b>Auditoría Actual:</b> <code>WR {m['wr']:.1f}% | R:R 1:{m['rr_ratio']:.2f} | PF {m['pf']:.2f}</code>\n"
         f"• <b>Comandos:</b> <code>/historial</code>, <code>/cartera</code>, <code>/radar</code>, <code>/cerrar SIMB PRECIO</code>"
     )
@@ -1545,7 +1585,7 @@ def run_continuous_session():
         t_val = now_m.hour + (now_m.minute / 60.0)
 
         if t_val >= 22.04:
-            save_state(state, push_to_git=True, msg="EOD Argon Quant v5.4 sync")
+            save_state(state, push_to_git=True, msg="EOD Argon Quant v5.5 sync")
             send_telegram_message(
                 f"🏁 <b>SESIÓN CERRADA EN WALL STREET (22:02 ESP)</b>\n\n"
                 + build_historial_audit_report(state)
