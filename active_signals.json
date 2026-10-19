@@ -196,5 +196,30 @@
     "cap_used": 464.19,
     "risk_usd": 3.93,
     "risk_pct": 0.2
+  },
+  "MSFT_1792423566": {
+    "symbol": "MSFT",
+    "sector": "Big_Tech_Comunicacion",
+    "engine": "Motor 1: Ignición Temprana en VWAP (Inicio de Subida)",
+    "price": 534.35,
+    "min_valid_entry": 533.55,
+    "max_valid_entry": 535.33,
+    "vwap": 533.59,
+    "atr": 3.47,
+    "one_r": 4.4458,
+    "rvol": 6.48,
+    "rsi": 51.0,
+    "alpha": 0.52,
+    "fuel_left_pct": 51,
+    "freshness_score": 6.82,
+    "stop_loss": 529.91,
+    "take_profit": 545.02,
+    "high_conviction": true,
+    "signal_ts": 1792423566.5619552,
+    "shares": 1,
+    "cap_used": 534.35,
+    "risk_usd": 4.44,
+    "risk_pct": 0.22,
+    "breadth_pct": 72.6
   }
 }
