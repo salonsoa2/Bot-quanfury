@@ -1,9 +1,9 @@
 {
   "initial_capital": 2000.0,
-  "equity": 1999.33,
-  "peak_equity": 2000.0,
+  "equity": 2001.16,
+  "peak_equity": 2001.16,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988668,
+  "last_update_id": 599988674,
   "pending_signals": {},
   "open_positions": {
     "SHOP": {
@@ -31,32 +31,6 @@
       "timestop_alerted": true,
       "opened_ts": 1792506103.9127758,
       "opened_at": "2026-10-20 16:21:43"
-    },
-    "UNH": {
-      "symbol": "UNH",
-      "sector": "Salud_Consumo_Movilidad",
-      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
-      "shares": 1,
-      "initial_shares": 1,
-      "realized_partial_usd": 0.0,
-      "entry_price": 418.19,
-      "stop_loss": 413.03,
-      "initial_stop_loss": 413.03,
-      "take_profit": 430.57,
-      "atr": 2.72,
-      "one_r": 5.16,
-      "trail_0_trigger": 424.12,
-      "trail_0_stop": 419.48,
-      "trail_1_trigger": 426.7,
-      "trail_1_stop": 422.83,
-      "trail_2_trigger": 428.77,
-      "trail_2_stop": 425.93,
-      "trail0_triggered": false,
-      "be_triggered": false,
-      "trail2_triggered": false,
-      "timestop_alerted": true,
-      "opened_ts": 1792507610.0716503,
-      "opened_at": "2026-10-20 16:46:50"
     }
   },
   "closed_trades": [
@@ -159,17 +133,17 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": -4.08,
-  "total_trades": 13,
-  "wins": 6,
+  "realized_pnl": -2.25,
+  "total_trades": 14,
+  "wins": 7,
   "losses": 7,
   "consecutive_losses": 0,
-  "gross_profit": 19.02,
+  "gross_profit": 20.85,
   "gross_loss": 23.1,
   "daily_pnl": {
     "2026-10-15": 19.01,
     "2026-10-16": -22.42,
-    "2026-10-20": -0.67
+    "2026-10-20": 1.16
   },
   "trade_history": [
     {
@@ -327,6 +301,18 @@
       "pnl_pct": 0.0,
       "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
       "closed_at": "2026-10-20 19:21:04"
+    },
+    {
+      "symbol": "UNH",
+      "sector": "Salud_Consumo_Movilidad",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+      "shares": 1,
+      "entry_price": 418.19,
+      "exit_price": 420.02,
+      "pnl_usd": 1.83,
+      "pnl_pct": 0.44,
+      "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
+      "closed_at": "2026-10-20 21:54:45"
     }
   ],
   "cooldowns": {
@@ -342,7 +328,7 @@
     "PYPL": "2026-10-16T19:46:44.420188+02:00",
     "MSFT": "2026-10-20T16:12:39.453516+02:00",
     "SNOW": "2026-10-20T19:56:04.752553+02:00",
-    "UNH": "2026-10-20T17:20:42.854521+02:00"
+    "UNH": "2026-10-20T22:29:45.741423+02:00"
   },
   "last_global_signal_ts": 1792507542.943464,
   "eod_alert_sent_date": ""
