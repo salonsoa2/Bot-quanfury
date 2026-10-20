@@ -1,38 +1,11 @@
 {
   "initial_capital": 2000.0,
-  "equity": 2001.16,
+  "equity": 1999.34,
   "peak_equity": 2001.16,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988674,
+  "last_update_id": 599988675,
   "pending_signals": {},
-  "open_positions": {
-    "SHOP": {
-      "symbol": "SHOP",
-      "sector": "Software_Cloud_Cyber",
-      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
-      "shares": 2,
-      "initial_shares": 2,
-      "realized_partial_usd": 0.0,
-      "entry_price": 174.24,
-      "stop_loss": 172.3,
-      "initial_stop_loss": 172.3,
-      "take_profit": 178.9,
-      "atr": 1.36,
-      "one_r": 1.94,
-      "trail_0_trigger": 176.47,
-      "trail_0_stop": 174.73,
-      "trail_1_trigger": 177.44,
-      "trail_1_stop": 175.99,
-      "trail_2_trigger": 178.22,
-      "trail_2_stop": 177.15,
-      "trail0_triggered": false,
-      "be_triggered": false,
-      "trail2_triggered": false,
-      "timestop_alerted": true,
-      "opened_ts": 1792506103.9127758,
-      "opened_at": "2026-10-20 16:21:43"
-    }
-  },
+  "open_positions": {},
   "closed_trades": [
     {
       "symbol": "ABNB",
@@ -133,17 +106,17 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": -2.25,
-  "total_trades": 14,
+  "realized_pnl": -4.07,
+  "total_trades": 15,
   "wins": 7,
-  "losses": 7,
-  "consecutive_losses": 0,
+  "losses": 8,
+  "consecutive_losses": 1,
   "gross_profit": 20.85,
-  "gross_loss": 23.1,
+  "gross_loss": 24.92,
   "daily_pnl": {
     "2026-10-15": 19.01,
     "2026-10-16": -22.42,
-    "2026-10-20": 1.16
+    "2026-10-20": -0.66
   },
   "trade_history": [
     {
@@ -313,13 +286,25 @@
       "pnl_pct": 0.44,
       "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
       "closed_at": "2026-10-20 21:54:45"
+    },
+    {
+      "symbol": "SHOP",
+      "sector": "Software_Cloud_Cyber",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+      "shares": 2,
+      "entry_price": 174.24,
+      "exit_price": 173.33,
+      "pnl_usd": -1.82,
+      "pnl_pct": -0.52,
+      "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
+      "closed_at": "2026-10-20 21:57:09"
     }
   ],
   "cooldowns": {
     "VST": "2026-10-16T19:07:08.324876+02:00",
     "SPOT": "2026-10-15T22:10:58.939692+02:00",
     "META": "2026-10-15T21:46:34.974795+02:00",
-    "SHOP": "2026-10-20T16:55:26.153527+02:00",
+    "SHOP": "2026-10-20T22:32:09.979151+02:00",
     "COIN": "2026-10-15T22:07:54.253802+02:00",
     "UBER": "2026-10-16T16:56:54.918028+02:00",
     "ISRG": "2026-10-16T17:50:26.945997+02:00",
@@ -331,5 +316,5 @@
     "UNH": "2026-10-20T22:29:45.741423+02:00"
   },
   "last_global_signal_ts": 1792507542.943464,
-  "eod_alert_sent_date": ""
+  "eod_alert_sent_date": "2026-10-20"
 }
