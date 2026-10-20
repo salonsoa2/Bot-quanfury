@@ -221,5 +221,30 @@
     "risk_usd": 3.76,
     "risk_pct": 0.19,
     "breadth_pct": 82.3
+  },
+  "SNOW_1792506655": {
+    "symbol": "SNOW",
+    "sector": "Software_Cloud_Cyber",
+    "engine": "Motor 2: Ruptura de Bandera Institucional (2ª Ola)",
+    "price": 320.74,
+    "min_valid_entry": 319.94,
+    "max_valid_entry": 321.85,
+    "vwap": 315.68,
+    "atr": 2.93,
+    "one_r": 4.4295,
+    "rvol": 1.94,
+    "rsi": 60.8,
+    "alpha": 1.96,
+    "fuel_left_pct": 47,
+    "velocity_score": 7.49,
+    "stop_loss": 316.31,
+    "take_profit": 331.37,
+    "high_conviction": true,
+    "signal_ts": 1792506655.8853867,
+    "shares": 1,
+    "cap_used": 320.74,
+    "risk_usd": 4.43,
+    "risk_pct": 0.22,
+    "breadth_pct": 83.9
   }
 }
