@@ -3,9 +3,36 @@
   "equity": 1999.32,
   "peak_equity": 2000.0,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988656,
+  "last_update_id": 599988661,
   "pending_signals": {},
-  "open_positions": {},
+  "open_positions": {
+    "SHOP": {
+      "symbol": "SHOP",
+      "sector": "Software_Cloud_Cyber",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+      "shares": 2,
+      "initial_shares": 2,
+      "realized_partial_usd": 0.0,
+      "entry_price": 174.18,
+      "stop_loss": 172.3,
+      "initial_stop_loss": 172.3,
+      "take_profit": 178.7,
+      "atr": 1.36,
+      "one_r": 1.88,
+      "trail_0_trigger": 176.34,
+      "trail_0_stop": 174.65,
+      "trail_1_trigger": 177.28,
+      "trail_1_stop": 175.87,
+      "trail_2_trigger": 178.03,
+      "trail_2_stop": 177.0,
+      "trail0_triggered": false,
+      "be_triggered": false,
+      "trail2_triggered": false,
+      "timestop_alerted": false,
+      "opened_ts": 1792506103.9127758,
+      "opened_at": "2026-10-20 16:21:43"
+    }
+  },
   "closed_trades": [
     {
       "symbol": "ABNB",
@@ -268,7 +295,7 @@
     "VST": "2026-10-16T19:07:08.324876+02:00",
     "SPOT": "2026-10-15T22:10:58.939692+02:00",
     "META": "2026-10-15T21:46:34.974795+02:00",
-    "SHOP": "2026-10-15T20:59:00.498694+02:00",
+    "SHOP": "2026-10-20T16:55:26.153527+02:00",
     "COIN": "2026-10-15T22:07:54.253802+02:00",
     "UBER": "2026-10-16T16:56:54.918028+02:00",
     "ISRG": "2026-10-16T17:50:26.945997+02:00",
@@ -277,6 +304,6 @@
     "PYPL": "2026-10-16T19:46:44.420188+02:00",
     "MSFT": "2026-10-20T16:12:39.453516+02:00"
   },
-  "last_global_signal_ts": 1792423566.572775,
+  "last_global_signal_ts": 1792506026.1747594,
   "eod_alert_sent_date": ""
 }
