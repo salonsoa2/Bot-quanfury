@@ -1,9 +1,9 @@
 {
   "initial_capital": 2000.0,
-  "equity": 1999.34,
-  "peak_equity": 2001.16,
+  "equity": 2010.33,
+  "peak_equity": 2010.33,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988686,
+  "last_update_id": 599988687,
   "pending_signals": {},
   "open_positions": {
     "TXN": {
@@ -31,32 +31,6 @@
       "timestop_alerted": true,
       "opened_ts": 1792593465.4695737,
       "opened_at": "2026-10-21 16:37:45"
-    },
-    "VRTX": {
-      "symbol": "VRTX",
-      "sector": "Salud_Consumo_Movilidad",
-      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo) + [SEC Form 4]",
-      "shares": 1,
-      "initial_shares": 1,
-      "realized_partial_usd": 0.0,
-      "entry_price": 516.48,
-      "stop_loss": 523.12,
-      "initial_stop_loss": 512.05,
-      "take_profit": 527.12,
-      "atr": 3.36,
-      "one_r": 4.43,
-      "trail_0_trigger": 521.57,
-      "trail_0_stop": 517.59,
-      "trail_1_trigger": 523.79,
-      "trail_1_stop": 520.47,
-      "trail_2_trigger": 525.56,
-      "trail_2_stop": 523.13,
-      "trail0_triggered": true,
-      "be_triggered": true,
-      "trail2_triggered": true,
-      "timestop_alerted": true,
-      "opened_ts": 1792593471.2716265,
-      "opened_at": "2026-10-21 16:37:51"
     }
   },
   "closed_trades": [
@@ -159,17 +133,18 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": -4.07,
-  "total_trades": 15,
-  "wins": 7,
+  "realized_pnl": 6.92,
+  "total_trades": 16,
+  "wins": 8,
   "losses": 8,
-  "consecutive_losses": 1,
-  "gross_profit": 20.85,
+  "consecutive_losses": 0,
+  "gross_profit": 31.84,
   "gross_loss": 24.92,
   "daily_pnl": {
     "2026-10-15": 19.01,
     "2026-10-16": -22.42,
-    "2026-10-20": -0.66
+    "2026-10-20": -0.66,
+    "2026-10-21": 10.99
   },
   "trade_history": [
     {
@@ -351,6 +326,18 @@
       "pnl_pct": -0.52,
       "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
       "closed_at": "2026-10-20 21:57:09"
+    },
+    {
+      "symbol": "VRTX",
+      "sector": "Salud_Consumo_Movilidad",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo) + [SEC Form 4]",
+      "shares": 1,
+      "entry_price": 516.48,
+      "exit_price": 527.47,
+      "pnl_usd": 10.99,
+      "pnl_pct": 2.13,
+      "reason": "🎯 TAKE-PROFIT COMPLETO (+2.40R)",
+      "closed_at": "2026-10-21 20:39:09"
     }
   ],
   "cooldowns": {
@@ -367,7 +354,7 @@
     "MSFT": "2026-10-20T16:12:39.453516+02:00",
     "SNOW": "2026-10-21T17:40:38.160455+02:00",
     "UNH": "2026-10-20T22:29:45.741423+02:00",
-    "VRTX": "2026-10-21T16:58:34.218247+02:00",
+    "VRTX": "2026-10-21T21:14:09.049227+02:00",
     "TXN": "2026-10-21T17:11:09.740529+02:00",
     "NOW": "2026-10-21T17:29:00.131582+02:00",
     "TSLA": "2026-10-21T19:15:26.358285+02:00",
