@@ -3,7 +3,7 @@
   "equity": 1999.34,
   "peak_equity": 2001.16,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988677,
+  "last_update_id": 599988678,
   "pending_signals": {},
   "open_positions": {
     "TXN": {
@@ -31,6 +31,32 @@
       "timestop_alerted": false,
       "opened_ts": 1792593465.4695737,
       "opened_at": "2026-10-21 16:37:45"
+    },
+    "VRTX": {
+      "symbol": "VRTX",
+      "sector": "Salud_Consumo_Movilidad",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo) + [SEC Form 4]",
+      "shares": 1,
+      "initial_shares": 1,
+      "realized_partial_usd": 0.0,
+      "entry_price": 516.48,
+      "stop_loss": 512.05,
+      "initial_stop_loss": 512.05,
+      "take_profit": 527.12,
+      "atr": 3.36,
+      "one_r": 4.43,
+      "trail_0_trigger": 521.57,
+      "trail_0_stop": 517.59,
+      "trail_1_trigger": 523.79,
+      "trail_1_stop": 520.47,
+      "trail_2_trigger": 525.56,
+      "trail_2_stop": 523.13,
+      "trail0_triggered": false,
+      "be_triggered": false,
+      "trail2_triggered": false,
+      "timestop_alerted": false,
+      "opened_ts": 1792593471.2716265,
+      "opened_at": "2026-10-21 16:37:51"
     }
   },
   "closed_trades": [
