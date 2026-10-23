@@ -3,7 +3,7 @@
   "equity": 2008.93,
   "peak_equity": 2012.85,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988702,
+  "last_update_id": 599988704,
   "pending_signals": {},
   "open_positions": {
     "CVX": {
@@ -57,6 +57,32 @@
       "timestop_alerted": false,
       "opened_ts": 1792767763.98361,
       "opened_at": "2026-10-23 17:02:43"
+    },
+    "ISRG": {
+      "symbol": "ISRG",
+      "sector": "Salud_Consumo_Movilidad",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+      "shares": 1,
+      "initial_shares": 1,
+      "realized_partial_usd": 0.0,
+      "entry_price": 455.28,
+      "stop_loss": 450.27,
+      "initial_stop_loss": 450.27,
+      "take_profit": 467.31,
+      "atr": 2.96,
+      "one_r": 5.01,
+      "trail_0_trigger": 461.04,
+      "trail_0_stop": 456.53,
+      "trail_1_trigger": 463.55,
+      "trail_1_stop": 459.79,
+      "trail_2_trigger": 465.55,
+      "trail_2_stop": 462.79,
+      "trail0_triggered": false,
+      "be_triggered": false,
+      "trail2_triggered": false,
+      "timestop_alerted": false,
+      "opened_ts": 1792768616.0469692,
+      "opened_at": "2026-10-23 17:16:56"
     }
   },
   "closed_trades": [
@@ -398,7 +424,7 @@
     "SHOP": "2026-10-20T22:32:09.979151+02:00",
     "COIN": "2026-10-21T17:20:35.056500+02:00",
     "UBER": "2026-10-16T16:56:54.918028+02:00",
-    "ISRG": "2026-10-16T17:50:26.945997+02:00",
+    "ISRG": "2026-10-23T17:50:44.259627+02:00",
     "NVDA": "2026-10-16T17:35:36.183290+02:00",
     "JPM": "2026-10-16T18:55:59.703295+02:00",
     "PYPL": "2026-10-23T16:50:00.953652+02:00",
@@ -413,6 +439,6 @@
     "CVX": "2026-10-23T17:20:20.004795+02:00",
     "XOM": "2026-10-23T17:36:33.991314+02:00"
   },
-  "last_global_signal_ts": 1792767694.0011942,
+  "last_global_signal_ts": 1792768544.3481889,
   "eod_alert_sent_date": "2026-10-20"
 }
