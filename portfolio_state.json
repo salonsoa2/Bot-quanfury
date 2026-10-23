@@ -3,7 +3,7 @@
   "equity": 2008.93,
   "peak_equity": 2012.85,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988704,
+  "last_update_id": 599988705,
   "pending_signals": {},
   "open_positions": {
     "CVX": {
@@ -54,7 +54,7 @@
       "trail0_triggered": false,
       "be_triggered": false,
       "trail2_triggered": false,
-      "timestop_alerted": false,
+      "timestop_alerted": true,
       "opened_ts": 1792767763.98361,
       "opened_at": "2026-10-23 17:02:43"
     },
@@ -80,7 +80,7 @@
       "trail0_triggered": false,
       "be_triggered": false,
       "trail2_triggered": false,
-      "timestop_alerted": false,
+      "timestop_alerted": true,
       "opened_ts": 1792768616.0469692,
       "opened_at": "2026-10-23 17:16:56"
     }
