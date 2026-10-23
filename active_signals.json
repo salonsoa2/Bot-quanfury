@@ -221,5 +221,30 @@
     "risk_usd": 3.92,
     "risk_pct": 0.19,
     "breadth_pct": 59.7
+  },
+  "CVX_1792766720": {
+    "symbol": "CVX",
+    "sector": "Energia_Industria_Defensa",
+    "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+    "price": 231.32,
+    "min_valid_entry": 230.95,
+    "max_valid_entry": 231.82,
+    "vwap": 230.27,
+    "atr": 1.5,
+    "one_r": 2.0199,
+    "rvol": 2.53,
+    "rsi": 64.7,
+    "alpha": 0.62,
+    "fuel_left_pct": 26,
+    "velocity_score": 5.61,
+    "stop_loss": 229.3,
+    "take_profit": 236.16,
+    "high_conviction": false,
+    "signal_ts": 1792766720.0668075,
+    "shares": 2,
+    "cap_used": 462.64,
+    "risk_usd": 4.04,
+    "risk_pct": 0.2,
+    "breadth_pct": 62.9
   }
 }
