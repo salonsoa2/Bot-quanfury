@@ -28,7 +28,7 @@
       "trail0_triggered": false,
       "be_triggered": false,
       "trail2_triggered": false,
-      "timestop_alerted": false,
+      "timestop_alerted": true,
       "opened_ts": 1793039565.8392327,
       "opened_at": "2026-10-26 19:32:45"
     }
