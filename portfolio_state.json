@@ -3,7 +3,7 @@
   "equity": 2007.41,
   "peak_equity": 2012.85,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988726,
+  "last_update_id": 599988727,
   "pending_signals": {},
   "open_positions": {
     "PANW": {
@@ -31,6 +31,32 @@
       "timestop_alerted": true,
       "opened_ts": 1793028090.4825547,
       "opened_at": "2026-10-26 16:21:30"
+    },
+    "SNOW": {
+      "symbol": "SNOW",
+      "sector": "Software_Cloud_Cyber",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+      "shares": 1,
+      "initial_shares": 1,
+      "realized_partial_usd": 0.0,
+      "entry_price": 335.12,
+      "stop_loss": 332.24,
+      "initial_stop_loss": 332.24,
+      "take_profit": 342.02,
+      "atr": 2.18,
+      "one_r": 2.88,
+      "trail_0_trigger": 338.43,
+      "trail_0_stop": 335.84,
+      "trail_1_trigger": 339.87,
+      "trail_1_stop": 337.71,
+      "trail_2_trigger": 341.02,
+      "trail_2_stop": 339.44,
+      "trail0_triggered": false,
+      "be_triggered": false,
+      "trail2_triggered": false,
+      "timestop_alerted": false,
+      "opened_ts": 1793039565.8392327,
+      "opened_at": "2026-10-26 19:32:45"
     }
   },
   "closed_trades": [
@@ -426,7 +452,7 @@
     "JPM": "2026-10-16T18:55:59.703295+02:00",
     "PYPL": "2026-10-23T16:50:00.953652+02:00",
     "MSFT": "2026-10-20T16:12:39.453516+02:00",
-    "SNOW": "2026-10-21T17:40:38.160455+02:00",
+    "SNOW": "2026-10-26T20:05:32.568130+01:00",
     "UNH": "2026-10-20T22:29:45.741423+02:00",
     "VRTX": "2026-10-21T21:14:09.049227+02:00",
     "TXN": "2026-10-21T21:26:37.882659+02:00",
@@ -436,6 +462,6 @@
     "CVX": "2026-10-23T22:33:52.350235+02:00",
     "XOM": "2026-10-23T22:33:30.956061+02:00"
   },
-  "last_global_signal_ts": 1793034988.742316,
+  "last_global_signal_ts": 1793039432.5846531,
   "eod_alert_sent_date": "2026-10-23"
 }
