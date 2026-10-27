@@ -823,8 +823,8 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, ny_tim
     # 10:00 NY = 30 min despues de la apertura (15:00 ESP en desfase / 16:00 ESP normal)
     # 15:15 NY = 45 min antes del cierre (20:15 ESP en desfase / 21:15 ESP normal)
     t_ny = ny_time.hour + (ny_time.minute / 60.0)
-    is_breakout_window = (10.00 <= t_ny < 12.00) or (13.50 <= t_ny <= 15.25)
-    is_continuous_window = (10.00 <= t_ny <= 15.25)
+    is_breakout_window = (10.00 <= t_ny < 12.00) or (13.50 <= t_ny <= 14.50)
+    is_continuous_window = (10.00 <= t_ny <= 14.50)
 
     signal_data = None
 
@@ -1547,9 +1547,9 @@ def process_telegram_updates(state, signals, indicator_cache=None, breadth_pct=5
 # ESCANER VELOCITY V5.6.2 (GOBERNADO POR HORA OFICIAL DE WALL STREET NY)
 # ==============================================================================
 def is_entry_window_open(ny_time):
-    """Ventana de compras: 10:00 NY a 15:15 NY (Equivale siempre a 30m tras apertura hasta 45m antes del cierre)."""
+    """Ventana de compras: 10:00 NY a 14:50 NY (Equivale siempre a 30m tras apertura hasta 45m antes del cierre)."""
     t_ny = ny_time.hour + (ny_time.minute / 60.0)
-    return 10.00 <= t_ny <= 15.25
+    return 10.00 <= t_ny <= 14.50
 
 def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
     if not indicator_cache or BENCHMARK not in indicator_cache:
