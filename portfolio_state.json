@@ -1,38 +1,11 @@
 {
   "initial_capital": 2000.0,
-  "equity": 2009.33,
+  "equity": 2012.46,
   "peak_equity": 2013.72,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988755,
+  "last_update_id": 599988756,
   "pending_signals": {},
-  "open_positions": {
-    "TSM": {
-      "symbol": "TSM",
-      "sector": "Semiconductores_IA",
-      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
-      "shares": 1,
-      "initial_shares": 1,
-      "realized_partial_usd": 0.0,
-      "entry_price": 433.5,
-      "stop_loss": 434.56,
-      "initial_stop_loss": 429.28,
-      "take_profit": 443.63,
-      "atr": 2.81,
-      "one_r": 4.22,
-      "trail_0_trigger": 438.35,
-      "trail_0_stop": 434.56,
-      "trail_1_trigger": 440.46,
-      "trail_1_stop": 437.3,
-      "trail_2_trigger": 442.15,
-      "trail_2_stop": 439.83,
-      "trail0_triggered": true,
-      "be_triggered": false,
-      "trail2_triggered": false,
-      "timestop_alerted": false,
-      "opened_ts": 1793112840.15915,
-      "opened_at": "2026-10-27 15:54:00"
-    }
-  },
+  "open_positions": {},
   "closed_trades": [
     {
       "symbol": "ABNB",
@@ -133,12 +106,12 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": 5.92,
-  "total_trades": 28,
-  "wins": 15,
+  "realized_pnl": 9.05,
+  "total_trades": 29,
+  "wins": 16,
   "losses": 13,
-  "consecutive_losses": 1,
-  "gross_profit": 49.38,
+  "consecutive_losses": 0,
+  "gross_profit": 52.51,
   "gross_loss": 43.46,
   "daily_pnl": {
     "2026-10-15": 19.01,
@@ -147,7 +120,7 @@
     "2026-10-21": 13.51,
     "2026-10-23": -1.36,
     "2026-10-26": -6.76,
-    "2026-10-27": 4.6
+    "2026-10-27": 7.73
   },
   "trade_history": [
     {
@@ -485,6 +458,18 @@
       "pnl_pct": -1.04,
       "reason": "🛑 STOP-LOSS EJECUTADO (-1.00R)",
       "closed_at": "2026-10-27 20:49:06"
+    },
+    {
+      "symbol": "TSM",
+      "sector": "Semiconductores_IA",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+      "shares": 1,
+      "entry_price": 433.5,
+      "exit_price": 436.63,
+      "pnl_usd": 3.13,
+      "pnl_pct": 0.72,
+      "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
+      "closed_at": "2026-10-27 20:56:38"
     }
   ],
   "cooldowns": {
@@ -509,9 +494,9 @@
     "CVX": "2026-10-23T22:33:52.350235+02:00",
     "XOM": "2026-10-23T22:33:30.956061+02:00",
     "AAPL": "2026-10-27T19:25:37.516150+01:00",
-    "TSM": "2026-10-27T16:27:47.391092+01:00",
+    "TSM": "2026-10-27T21:31:38.015239+01:00",
     "VRT": "2026-10-27T21:24:06.254775+01:00"
   },
   "last_global_signal_ts": 1793128536.4544985,
-  "eod_alert_sent_date": "2026-10-26"
+  "eod_alert_sent_date": "2026-10-27"
 }
