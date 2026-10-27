@@ -296,5 +296,30 @@
     "risk_usd": 3.72,
     "risk_pct": 0.19,
     "breadth_pct": 66.1
+  },
+  "VRT_1793128536": {
+    "symbol": "VRT",
+    "sector": "Semiconductores_IA",
+    "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+    "price": 210.33,
+    "min_valid_entry": 210.01,
+    "max_valid_entry": 210.78,
+    "vwap": 209.12,
+    "atr": 1.37,
+    "one_r": 1.8046,
+    "rvol": 2.84,
+    "rsi": 64.0,
+    "alpha": 2.68,
+    "fuel_left_pct": 18,
+    "velocity_score": 8.33,
+    "stop_loss": 208.53,
+    "take_profit": 214.66,
+    "high_conviction": true,
+    "signal_ts": 1793128536.4472618,
+    "shares": 2,
+    "cap_used": 420.66,
+    "risk_usd": 3.6,
+    "risk_pct": 0.18,
+    "breadth_pct": 72.6
   }
 }

@@ -3,7 +3,7 @@
   "equity": 2013.72,
   "peak_equity": 2013.72,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988751,
+  "last_update_id": 599988753,
   "pending_signals": {},
   "open_positions": {
     "TSM": {
@@ -31,6 +31,32 @@
       "timestop_alerted": false,
       "opened_ts": 1793112840.15915,
       "opened_at": "2026-10-27 15:54:00"
+    },
+    "VRT": {
+      "symbol": "VRT",
+      "sector": "Semiconductores_IA",
+      "engine": "Motor 1: Pullback Temprano EMA-9 (Líder con Ritmo)",
+      "shares": 2,
+      "initial_shares": 2,
+      "realized_partial_usd": 0.0,
+      "entry_price": 210.33,
+      "stop_loss": 208.53,
+      "initial_stop_loss": 208.53,
+      "take_profit": 214.66,
+      "atr": 1.37,
+      "one_r": 1.8,
+      "trail_0_trigger": 212.4,
+      "trail_0_stop": 210.78,
+      "trail_1_trigger": 213.3,
+      "trail_1_stop": 211.95,
+      "trail_2_trigger": 214.02,
+      "trail_2_stop": 213.03,
+      "trail0_triggered": false,
+      "be_triggered": false,
+      "trail2_triggered": false,
+      "timestop_alerted": false,
+      "opened_ts": 1793128596.6876705,
+      "opened_at": "2026-10-27 20:16:36"
     }
   },
   "closed_trades": [
@@ -497,8 +523,9 @@
     "CVX": "2026-10-23T22:33:52.350235+02:00",
     "XOM": "2026-10-23T22:33:30.956061+02:00",
     "AAPL": "2026-10-27T19:25:37.516150+01:00",
-    "TSM": "2026-10-27T16:27:47.391092+01:00"
+    "TSM": "2026-10-27T16:27:47.391092+01:00",
+    "VRT": "2026-10-27T20:50:36.256032+01:00"
   },
-  "last_global_signal_ts": 1793112767.4031117,
+  "last_global_signal_ts": 1793128536.4544985,
   "eod_alert_sent_date": "2026-10-26"
 }
