@@ -37,10 +37,10 @@ MAX_DAILY_DRAWDOWN = -0.0085        # Cortafuegos diario real: -0.85% (-17.00$ s
 
 # Geometria Anti-Lateral de 3 Trinquetes en Multiplos de R (1R = Distancia Entrada a Stop Inicial)
 TARGET_TP_R_MULT = 2.40             # Take-Profit completo a +2.40R (~+10.10$)
-TRAIL_0_TRIGGER_R = 1.15            # Nivel 0 (Anti-Lateral): Al ganar +1.15R (~+4.80$), protege la posicion
-TRAIL_0_LOCK_R = 0.25               # Nivel 0 asegura +0.25R (+1.05$ limpios) dejando 0.90R de espacio contra ruido
-TRAIL_1_TRIGGER_R = 1.65            # Nivel 1: Al ganar +1.65R (~+6.90$), blinda beneficio fuerte
-TRAIL_1_LOCK_R = 0.90               # Nivel 1 asegura +0.90R (~+3.80$ limpios) dejando 0.75R de aire
+TRAIL_0_TRIGGER_R = 1.30            # Nivel 0 (Anti-Lateral): Pide +1.30R para dar aire y no ahogar la tendencia
+TRAIL_0_LOCK_R = 0.40               # Nivel 0 asegura +0.40R (~+1.70$ limpios) en vez de solo +0.25R
+TRAIL_1_TRIGGER_R = 1.75            # Nivel 1: Al consolidar +1.75R (~+7.35$)
+TRAIL_1_LOCK_R = 1.05               # Nivel 1 asegura +1.05R (~+4.40$ limpios, superando ya un stop entero)
 TRAIL_2_TRIGGER_R = 2.05            # Nivel 2: Al ganar +2.05R (~+8.60$), acorrala el precio
 TRAIL_2_LOCK_R = 1.50               # Nivel 2 asegura +1.50R (~+6.30$ limpios)
 
