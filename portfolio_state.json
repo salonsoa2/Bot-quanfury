@@ -3,7 +3,7 @@
   "equity": 2004.73,
   "peak_equity": 2012.85,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988737,
+  "last_update_id": 599988738,
   "pending_signals": {},
   "open_positions": {
     "PANW": {
@@ -31,6 +31,32 @@
       "timestop_alerted": false,
       "opened_ts": 1793111598.6756294,
       "opened_at": "2026-10-27 15:33:18"
+    },
+    "AAPL": {
+      "symbol": "AAPL",
+      "sector": "Big_Tech_Comunicacion",
+      "engine": "Motor 4: Explosión de Volatilidad / Líder Sectorial",
+      "shares": 1,
+      "initial_shares": 1,
+      "realized_partial_usd": 0.0,
+      "entry_price": 345.76,
+      "stop_loss": 342.7,
+      "initial_stop_loss": 342.7,
+      "take_profit": 353.09,
+      "atr": 2.25,
+      "one_r": 3.06,
+      "trail_0_trigger": 349.28,
+      "trail_0_stop": 346.52,
+      "trail_1_trigger": 350.81,
+      "trail_1_stop": 348.51,
+      "trail_2_trigger": 352.03,
+      "trail_2_stop": 350.35,
+      "trail0_triggered": false,
+      "be_triggered": false,
+      "trail2_triggered": false,
+      "timestop_alerted": false,
+      "opened_ts": 1793111828.684769,
+      "opened_at": "2026-10-27 15:37:08"
     }
   },
   "closed_trades": [
@@ -458,8 +484,9 @@
     "TSLA": "2026-10-21T19:15:26.358285+02:00",
     "PANW": "2026-10-27T16:01:38.187073+01:00",
     "CVX": "2026-10-23T22:33:52.350235+02:00",
-    "XOM": "2026-10-23T22:33:30.956061+02:00"
+    "XOM": "2026-10-23T22:33:30.956061+02:00",
+    "AAPL": "2026-10-27T16:11:02.088719+01:00"
   },
-  "last_global_signal_ts": 1793111198.358546,
+  "last_global_signal_ts": 1793111762.2246404,
   "eod_alert_sent_date": "2026-10-26"
 }
