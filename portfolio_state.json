@@ -1,37 +1,11 @@
 {
   "initial_capital": 2000.0,
-  "equity": 2004.73,
+  "equity": 2011.47,
   "peak_equity": 2012.85,
   "max_drawdown_pct": -1.12,
   "last_update_id": 599988744,
   "pending_signals": {},
   "open_positions": {
-    "PANW": {
-      "symbol": "PANW",
-      "sector": "Software_Cloud_Cyber",
-      "engine": "Motor 2: Ruptura de Bandera Institucional (2ª Ola)",
-      "shares": 1,
-      "initial_shares": 1,
-      "realized_partial_usd": 0.0,
-      "entry_price": 395.48,
-      "stop_loss": 402.22,
-      "initial_stop_loss": 390.99,
-      "take_profit": 406.26,
-      "atr": 3.3,
-      "one_r": 4.49,
-      "trail_0_trigger": 400.64,
-      "trail_0_stop": 396.6,
-      "trail_1_trigger": 402.89,
-      "trail_1_stop": 399.52,
-      "trail_2_trigger": 404.68,
-      "trail_2_stop": 402.22,
-      "trail0_triggered": true,
-      "be_triggered": true,
-      "trail2_triggered": true,
-      "timestop_alerted": false,
-      "opened_ts": 1793111598.6756294,
-      "opened_at": "2026-10-27 15:33:18"
-    },
     "AAPL": {
       "symbol": "AAPL",
       "sector": "Big_Tech_Comunicacion",
@@ -211,12 +185,12 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": 1.32,
-  "total_trades": 24,
-  "wins": 12,
+  "realized_pnl": 8.06,
+  "total_trades": 25,
+  "wins": 13,
   "losses": 12,
-  "consecutive_losses": 1,
-  "gross_profit": 40.39,
+  "consecutive_losses": 0,
+  "gross_profit": 47.13,
   "gross_loss": 39.07,
   "daily_pnl": {
     "2026-10-15": 19.01,
@@ -224,7 +198,8 @@
     "2026-10-20": -0.66,
     "2026-10-21": 13.51,
     "2026-10-23": -1.36,
-    "2026-10-26": -6.76
+    "2026-10-26": -6.76,
+    "2026-10-27": 6.74
   },
   "trade_history": [
     {
@@ -514,6 +489,18 @@
       "pnl_pct": -1.03,
       "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
       "closed_at": "2026-10-26 21:56:06"
+    },
+    {
+      "symbol": "PANW",
+      "sector": "Software_Cloud_Cyber",
+      "engine": "Motor 2: Ruptura de Bandera Institucional (2ª Ola)",
+      "shares": 1,
+      "entry_price": 395.48,
+      "exit_price": 402.22,
+      "pnl_usd": 6.74,
+      "pnl_pct": 1.7,
+      "reason": "🔒 SALIDA EN TRINQUETE NIVEL 2 (+1.50R ASEGURADO)",
+      "closed_at": "2026-10-27 18:22:13"
     }
   ],
   "cooldowns": {
@@ -534,7 +521,7 @@
     "TXN": "2026-10-21T21:26:37.882659+02:00",
     "NOW": "2026-10-21T17:29:00.131582+02:00",
     "TSLA": "2026-10-21T19:15:26.358285+02:00",
-    "PANW": "2026-10-27T16:01:38.187073+01:00",
+    "PANW": "2026-10-27T18:57:13.297343+01:00",
     "CVX": "2026-10-23T22:33:52.350235+02:00",
     "XOM": "2026-10-23T22:33:30.956061+02:00",
     "AAPL": "2026-10-27T16:11:02.088719+01:00",
