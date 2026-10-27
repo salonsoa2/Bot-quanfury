@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 # ==============================================================================
-# CONFIGURACION INSTITUCIONAL — ARGON QUANT V5.6 (VELOCITY & ANTI-ZOMBIE)
+# CONFIGURACION INSTITUCIONAL — ARGON QUANT V5.6.2 (AUTO-DST DUAL CLOCK)
 # ==============================================================================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
@@ -19,7 +19,10 @@ TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 STATE_FILE = "portfolio_state.json"
 SIGNALS_FILE = "active_signals.json"
 SEC_CACHE_FILE = "sec_insider_cache.json"
+
+# Doble Reloj: NY gobierna las reglas de Wall Street (inmune a cambios de hora) y Madrid muestra la hora local
 TZ_MADRID = pytz.timezone("Europe/Madrid")
+TZ_NY = pytz.timezone("America/New_York")
 
 # Gestion de Capital Armonizada: 1R Constante (~4.20$ - 5.20$ en tramo 2.000$)
 DEFAULT_INITIAL_CAPITAL = 2000.0
@@ -29,7 +32,7 @@ MAX_SINGLE_RISK_CAP = 0.0038        # 0.38% tope maximo por redondeo de 1 accion
 MAX_POSITION_ALLOCATION = 0.245     # 24.5% del poder maximo por posicion (~490$)
 FREE_POWER_SAFETY_BUFFER = 0.96     # Usa hasta el 96% del poder libre disponible
 MAX_OPEN_POSITIONS = 3              # Maximo 3 posiciones simultaneas
-MAX_PER_SECTOR = 2                  # Permite hasta 2 lideres si el sector esta en fuego (no bloquea por 1 zombie)
+MAX_PER_SECTOR = 2                  # Permite hasta 2 lideres si el sector esta en fuego
 MAX_DAILY_DRAWDOWN = -0.0085        # Cortafuegos diario real: -0.85% (-17.00$ sobre 2.000$)
 
 # Geometria Anti-Lateral de 3 Trinquetes en Multiplos de R (1R = Distancia Entrada a Stop Inicial)
@@ -41,12 +44,12 @@ TRAIL_1_LOCK_R = 0.90               # Nivel 1 asegura +0.90R (~+3.80$ limpios) d
 TRAIL_2_TRIGGER_R = 2.05            # Nivel 2: Al ganar +2.05R (~+8.60$), acorrala el precio
 TRAIL_2_LOCK_R = 1.50               # Nivel 2 asegura +1.50R (~+6.30$ limpios)
 
-# Filtros de Velocidad Real V5.6 (Elimina acciones dormidas como MSFT ayer y desbloquea la tarde)
+# Filtros de Velocidad Real V5.6.2 (Elimina acciones dormidas y desbloquea la tarde)
 MIN_STOP_DISTANCE_PCT = 0.0082      # Stop-Loss minimo 0.82%
-MIN_ACTIVE_ATR_PCT = 0.0020         # Velocidad minima: la accion debe moverse al menos 0.20% por vela de 5m (evita zombies)
+MIN_ACTIVE_ATR_PCT = 0.0020         # Velocidad minima: la accion debe moverse al menos 0.20% por vela de 5m
 MAX_PANIC_ATR_PCT = 0.0135          # Tope anti-crash (>1.35% por vela de 5m)
 MAX_CLIMAX_BAR_ATR_MULT = 2.50      # Prohibido comprar velas gigantes de agotamiento (>2.5x ATR)
-MAX_ADR_USED_PCT = 92.0             # Ampliado a 92% para NO bloquear a los lideres por la tarde (17:30-21:15)
+MAX_ADR_USED_PCT = 92.0             # Permite operar lideres por la tarde hasta el 92% del ADR
 MAX_VWAP_EXTENSION_ATR = 1.95       # Permite operar tendencias sanas de tarde sin estrangular el escaner
 PULLBACK_MAX_EMA9_ATR = 0.80        # Pullbacks: compra pegado a la EMA-9 (<= 0.80x ATR)
 BREAKOUT_MAX_EMA9_ATR = 1.45        # Continuaciones y Squeezes: margen natural de despegue (<= 1.45x ATR)
@@ -84,15 +87,30 @@ SEC_CIK_MAP = {
 }
 
 # ==============================================================================
-# UTILIDADES DE TIEMPO Y PERSISTENCIA GIT BLINDADA
+# MOTOR DE DOBLE RELOJ AUTOMATICO (NY PARA REGLAS / MADRID PARA PANTALLA)
 # ==============================================================================
 def now_madrid():
     return datetime.now(TZ_MADRID)
 
-def today_str():
-    return now_madrid().strftime("%Y-%m-%d")
+def now_ny():
+    return datetime.now(TZ_NY)
 
-def git_sync_state(commit_msg="Auto-sync Argon Quant v5.6"):
+def today_str():
+    """Usa la fecha de la sesion de Wall Street para agrupar el PnL diario sin desfases."""
+    return now_ny().strftime("%Y-%m-%d")
+
+def get_madrid_market_hours_str():
+    """Calcula automaticamente a que hora de Madrid abre y cierra hoy Wall Street (14:30-21:00 o 15:30-22:00)."""
+    ny_curr = now_ny()
+    ny_open = ny_curr.replace(hour=9, minute=30, second=0, microsecond=0)
+    ny_entry = ny_curr.replace(hour=10, minute=0, second=0, microsecond=0)
+    ny_close = ny_curr.replace(hour=16, minute=0, second=0, microsecond=0)
+    mad_open = ny_open.astimezone(TZ_MADRID).strftime("%H:%M")
+    mad_entry = ny_entry.astimezone(TZ_MADRID).strftime("%H:%M")
+    mad_close = ny_close.astimezone(TZ_MADRID).strftime("%H:%M")
+    return mad_open, mad_entry, mad_close
+
+def git_sync_state(commit_msg="Auto-sync Argon Quant v5.6.2"):
     try:
         subprocess.run(["git", "config", "--global", "user.name", "argon-quant-bot"], check=False)
         subprocess.run(["git", "config", "--global", "user.email", "bot@argonquant.local"], check=False)
@@ -158,7 +176,7 @@ def load_state():
         "eod_alert_sent_date": ""
     }
 
-def save_state(state, push_to_git=False, msg="Sync portfolio state v5.6"):
+def save_state(state, push_to_git=False, msg="Sync portfolio state v5.6.2"):
     try:
         with open(STATE_FILE, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2, ensure_ascii=False)
@@ -277,8 +295,7 @@ def get_floating_pnl_usd(state, indicator_cache=None):
     return floating
 
 def has_losing_open_position(state, indicator_cache):
-    """Cerrojo Anti-Cascada V5.6: Solo bloquea si una posicion sufre caida real (<-0.55R, ~-2.30$).
-    Asi una posicion plana en -0.60$ como MSFT ayer NUNCA bloquea nuevas senales por la tarde."""
+    """Cerrojo Anti-Cascada V5.6.2: Solo bloquea si una posicion sufre caida real (<-0.55R, ~-2.30$)."""
     if not indicator_cache:
         return False
     for sym, pos in state.get("open_positions", {}).items():
@@ -538,7 +555,7 @@ def check_sec_form4_catalyst(symbol):
             recent = data.get("filings", {}).get("recent", {})
             forms = recent.get("form", [])
             dates = recent.get("filingDate", [])
-            cutoff = (now_madrid() - timedelta(days=3)).strftime("%Y-%m-%d")
+            cutoff = (now_ny() - timedelta(days=3)).strftime("%Y-%m-%d")
             for form_type, f_date in zip(forms[:35], dates[:35]):
                 if form_type == "4" and f_date >= cutoff:
                     has_recent_form4 = True
@@ -555,7 +572,7 @@ def check_sec_form4_catalyst(symbol):
     return has_recent_form4
 
 # ==============================================================================
-# MOTOR DE INDICADORES V5.6 (CON VELOCIDAD DE VELA Y COMPRESION)
+# MOTOR DE INDICADORES V5.6.2 (INDEXADO EN HORA OFICIAL DE WALL STREET NY)
 # ==============================================================================
 def fetch_omni_market_batch():
     tickers_to_fetch = list(set(ALL_TICKERS + [BENCHMARK]))
@@ -583,10 +600,11 @@ def compute_intraday_indicators(df):
     if len(df) < 55:
         return None
 
+    # Usa America/New_York para agrupar sesiones bursatiles sin importar el cambio de hora europeo
     if df.index.tz is None:
-        df.index = df.index.tz_localize("UTC").tz_convert(TZ_MADRID)
+        df.index = df.index.tz_localize("UTC").tz_convert(TZ_NY)
     else:
-        df.index = df.index.tz_convert(TZ_MADRID)
+        df.index = df.index.tz_convert(TZ_NY)
 
     df["Date"] = df.index.date
     df["Typical_Price"] = (df["High"] + df["Low"] + df["Close"]) / 3.0
@@ -728,9 +746,9 @@ def is_qqq_truly_bullish(df_qqq):
     return bullish, qqq_ret
 
 # ==============================================================================
-# MOTOR DE EVALUACION V5.6 (FILTRO DE VELOCIDAD REAL: CERO ACCIONES DORMIDAS)
+# MOTOR DE EVALUACION V5.6.2 (ANCLADO AL RELOJ DE NY 10:00 A 15:15 NY)
 # ==============================================================================
-def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, current_time):
+def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, ny_time):
     if df is None or len(df) < 55:
         return None
 
@@ -760,14 +778,12 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
     raw_atr = float(closed_bar["ATR"]) if not np.isnan(closed_bar["ATR"]) else (live_price * 0.008)
     atr_pct = raw_atr / live_price if live_price > 0 else 0.0
 
-    # FILTRO ANTI-ZOMBIE V5.6:
-    # Si la accion tiene un ATR ridiculo (<0.20% por vela de 5m, como MSFT dormida ayer), PROHIBIDO comprar
+    # FILTRO ANTI-ZOMBIE V5.6.2:
     if atr_pct < MIN_ACTIVE_ATR_PCT or atr_pct > MAX_PANIC_ATR_PCT:
         return None
     if raw_atr > 0 and (closed_bar_range / raw_atr) > MAX_CLIMAX_BAR_ATR_MULT:
         return None
 
-    # La vela de senal debe tener un cuerpo alcista real (>= 0.45x ATR) y superar el maximo de las 2 velas previas
     has_real_thrust = (candle_body >= (0.45 * raw_atr)) and (close_p >= prev_2bar_high)
     if not has_real_thrust:
         return None
@@ -803,9 +819,12 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
     if not strong_bullish_candle or not (0.0 <= vwap_dist_atr <= MAX_VWAP_EXTENSION_ATR):
         return None
 
-    t_val = current_time.hour + (current_time.minute / 60.0)
-    is_breakout_window = (16.00 <= t_val < 18.00) or (19.50 <= t_val <= 21.25)
-    is_continuous_window = (16.00 <= t_val <= 21.25)
+    # Ventanas institucionales en hora de Nueva York (inmunes a cualquier cambio de hora en Espana):
+    # 10:00 NY = 30 min despues de la apertura (15:00 ESP en desfase / 16:00 ESP normal)
+    # 15:15 NY = 45 min antes del cierre (20:15 ESP en desfase / 21:15 ESP normal)
+    t_ny = ny_time.hour + (ny_time.minute / 60.0)
+    is_breakout_window = (10.00 <= t_ny < 12.00) or (13.50 <= t_ny <= 15.25)
+    is_continuous_window = (10.00 <= t_ny <= 15.25)
 
     signal_data = None
 
@@ -834,7 +853,7 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
                         "high_conviction": (alpha_vs_qqq >= 1.00 and rvol >= 1.50)
                     }
 
-    # 3. MOTOR 3: Ignicion en VWAP con Alta Velocidad (Exige RVOL >= 1.40x y ADX >= 22 para no comprar valores muertos)
+    # 3. MOTOR 3: Ignicion en VWAP con Alta Velocidad
     if signal_data is None and is_continuous_window and vwap_dist_atr <= 0.75 and adr_used_pct <= 65.0 and 48 <= rsi14 <= 66:
         tested_vwap = (float(prev_closed["Low"]) <= vwap_p * 1.003) or (float(closed_bar["Low"]) <= vwap_p * 1.003)
         if tested_vwap and rvol >= 1.40 and alpha_vs_qqq >= 0.45 and adx >= 22:
@@ -875,7 +894,6 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
     min_valid_entry = round(max(ema9 * 0.9985, live_price - (0.18 * one_r_dist)), 2)
     max_valid_entry = round(live_price + (MAX_ENTRY_CHASE_R * one_r_dist), 2)
 
-    # Puntuacion Hibrida V5.6: Premia Fuerza Relativa Real (Alpha) + Velocidad (ATR%) + RVOL + Cercania a EMA-9
     velocity_score = (
         signal_data["priority_bonus"]
         + (alpha_vs_qqq * 1.25)
@@ -906,7 +924,7 @@ def evaluate_symbol_v5(symbol, df, qqq_ret_pct, qqq_bullish, breadth_pct, curren
     }
 
 # ==============================================================================
-# GESTION DE POSICIONES ABIERTAS V5.6 (CON DETECTOR ANTI-ZOMBIE A LOS 35 MIN)
+# GESTION DE POSICIONES ABIERTAS V5.6.2 (CON ALERTA EOD AUTOMATICA A LAS 15:55 NY)
 # ==============================================================================
 def get_position_opened_ts(pos):
     if "opened_ts" in pos and float(pos["opened_ts"]) > 0:
@@ -925,13 +943,15 @@ def monitor_open_positions(state, indicator_cache):
     if not open_pos or not indicator_cache:
         return
 
-    now_m = now_madrid()
-    t_val = now_m.hour + (now_m.minute / 60.0)
+    ny_m = now_ny()
+    t_ny = ny_m.hour + (ny_m.minute / 60.0)
 
-    if t_val >= 21.916 and state.get("eod_alert_sent_date") != today_str():
+    # 15.916 NY = 15:55 NY (exactamente 5 minutos antes del cierre de Wall Street, sea 20:55 o 21:55 en Espana)
+    if t_ny >= 15.916 and state.get("eod_alert_sent_date") != today_str():
         tickers_list = ", ".join(open_pos.keys())
+        mad_now_str = now_madrid().strftime("%H:%M")
         send_telegram_message(
-            f"⚠️ <b>ALERTA DE CIERRE INTRADÍA (21:55 ESP)</b> ⚠️\n\n"
+            f"⚠️ <b>ALERTA DE CIERRE INTRADÍA ({mad_now_str} ESP / 15:55 NY)</b> ⚠️\n\n"
             f"Quedan 5 minutos para el cierre de Wall Street.\n"
             f"Posiciones abiertas a cerrar en Quantfury para <b>0% riesgo nocturno</b>:\n"
             f"👉 <code>{tickers_list}</code>\n\n"
@@ -1063,7 +1083,7 @@ def monitor_open_positions(state, indicator_cache):
                             f"🛡️ <i>Riesgo eliminado: pase lo que pase ya ganas mínimo <b>+{locked_profit_0:.2f} $</b></i>"
                         )
 
-            # 6. Detector Anti-Zombie V5.6 (35 min sin despegar: avisa con boton para liberar capital)
+            # 6. Detector Anti-Zombie V5.6.2 (35 min sin despegar)
             if not pos.get("trail0_triggered", False) and not pos.get("timestop_alerted", False):
                 if opened_ts > 0:
                     mins_open = (time.time() - opened_ts) / 60.0
@@ -1129,9 +1149,9 @@ def compute_quant_audit_metrics(state):
     elif expectancy_usd > 0 and pf >= 1.65:
         verdict = "🟢 BOT SÓLIDO & RENTABLE (Ventaja Estadística Positiva)"
     elif expectancy_usd > 0:
-        verdict = "🟡 RENTABLE EN AJUSTE (Subiendo R:R con Velocidad V5.6)"
+        verdict = "🟡 RENTABLE EN AJUSTE (Subiendo R:R con Velocidad V5.6.2)"
     else:
-        verdict = "🔴 EN RACHA ADVERSA (Escudos Velocity V5.6 Activos)"
+        verdict = "🔴 EN RACHA ADVERSA (Escudos Velocity V5.6.2 Activos)"
 
     return {
         "total": total, "wins": w_count, "losses": l_count, "wr": wr,
@@ -1183,16 +1203,17 @@ def build_portfolio_report(state, indicator_cache=None):
     free_bp = get_free_buying_power(state)
     dd_today = get_total_daily_drawdown_pct(state, indicator_cache) * 100
     m = compute_quant_audit_metrics(state)
+    mad_open, mad_entry, mad_close = get_madrid_market_hours_str()
 
     open_pos = state.get("open_positions", {})
     lines = [
-        f"📊 <b>LIBRO CONTABLE QUANTFURY (VELOCITY v5.6)</b>",
+        f"📊 <b>LIBRO CONTABLE QUANTFURY (AUTO-DST v5.6.2)</b>",
         f"• <b>Poder Total:</b> <code>{eq:,.2f} $</code> | <b>Libre:</b> <code>{free_bp:,.2f} $</code>",
         f"• <b>PnL Cuenta Actual:</b> <code>{net_pnl:+,.2f} $ ({net_pct:+.2f}%)</code>",
         f"• <b>PnL Día (Cerrado + Flotante):</b> <code>{dd_today:+.2f}%</code> <i>(Tope -0.85%)</i>",
+        f"• <b>Horario Hoy (ESP):</b> <code>{mad_open} a {mad_close}</code> <i>(Compras desde {mad_entry})</i>",
         f"• <b>Operaciones:</b> <code>{m['total']} ({m['wins']}W / {m['losses']}L)</code> | <b>WR:</b> <code>{m['wr']:.1f}%</code>",
         f"• <b>Ratio R:R Real:</b> <code>1 : {m['rr_ratio']:.2f}</code> | <b>Profit Factor:</b> <code>{m['pf']:.2f}</code>",
-        f"• <b>Esperanza / Trade:</b> <code>{m['expectancy_usd']:+.2f} $</code>",
         f"• <b>Abiertas ahora:</b> <code>{len(open_pos)}/{MAX_OPEN_POSITIONS}</code> (55 Activos Universales)"
     ]
 
@@ -1253,8 +1274,9 @@ def build_radar_report(indicator_cache, breadth_pct):
         regime_str = "🟢 MERCADO SANO (Permiso Activo)" if (qqq_bull and breadth_pct >= 34.0) else "🛑 ESCUDO DEFENSIVO ACTIVO (QQQ o Amplitud Débil)"
 
         msg = [
-            f"🔭 <b>RADAR VELOCITY V5.6 (LÍDERES CON RITMO REAL)</b>",
+            f"🔭 <b>RADAR AUTO-DST V5.6.2 (LÍDERES CON RITMO REAL)</b>",
             f"• <b>QQQ:</b> <code>{qqq_ret:+.2f}%</code> | <b>Amplitud (&gt;VWAP):</b> <code>{breadth_pct:.1f}%</code>",
+            f"• <b>Hora Actual:</b> <code>{now_madrid().strftime('%H:%M')} ESP ({now_ny().strftime('%H:%M')} NY)</code>",
             f"• <b>Estado:</b> {regime_str}",
             f"\n🏆 <b>TOP 12 LÍDERES ACTIVOS:</b>"
         ]
@@ -1522,18 +1544,20 @@ def process_telegram_updates(state, signals, indicator_cache=None, breadth_pct=5
                     )
 
 # ==============================================================================
-# ESCANER VELOCITY V5.6 (ORDENA POR IMPULSO REAL + CERCANIA A EMA-9)
+# ESCANER VELOCITY V5.6.2 (GOBERNADO POR HORA OFICIAL DE WALL STREET NY)
 # ==============================================================================
-def is_entry_window_open(curr_time):
-    t = curr_time.hour + (curr_time.minute / 60.0)
-    return 16.00 <= t <= 21.25
+def is_entry_window_open(ny_time):
+    """Ventana de compras: 10:00 NY a 15:15 NY (Equivale siempre a 30m tras apertura hasta 45m antes del cierre)."""
+    t_ny = ny_time.hour + (ny_time.minute / 60.0)
+    return 10.00 <= t_ny <= 15.25
 
 def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
     if not indicator_cache or BENCHMARK not in indicator_cache:
         return
+    ny_m = now_ny()
     now_m = now_madrid()
 
-    if not is_entry_window_open(now_m):
+    if not is_entry_window_open(ny_m):
         return
 
     if get_total_daily_drawdown_pct(state, indicator_cache) <= MAX_DAILY_DRAWDOWN:
@@ -1577,7 +1601,7 @@ def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
         if df_sym is None:
             continue
 
-        eval_res = evaluate_symbol_v5(symbol, df_sym, qqq_ret, qqq_bullish, breadth_pct, now_m)
+        eval_res = evaluate_symbol_v5(symbol, df_sym, qqq_ret, qqq_bullish, breadth_pct, ny_m)
         if not eval_res:
             continue
 
@@ -1600,7 +1624,6 @@ def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
     if not candidates:
         return
 
-    # V5.6: Prioriza lideres con velocidad real (velocity_score) para no elegir acciones dormidas
     candidates.sort(key=lambda x: (1 if x["high_conviction"] else 0, x["velocity_score"], x["rvol"]), reverse=True)
     best = candidates[0]
     symbol = best["symbol"]
@@ -1623,7 +1646,7 @@ def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
     expected_tp_usd = round((best["take_profit"] - best["price"]) * best["shares"], 2)
 
     msg_text = (
-        f"🎯 <b>SEÑAL VELOCITY V5.6 — {symbol} ({best['sector']})</b> 🎯\n"
+        f"🎯 <b>SEÑAL VELOCITY V5.6.2 — {symbol} ({best['sector']})</b> 🎯\n"
         f"{conv_tag}\n"
         f"• <b>Motor:</b> <code>{best['engine']}</code>\n"
         f"• <b>⛽ Gasolina Diaria Virgen:</b> <b><code>{best['fuel_left_pct']}% libre</code></b>\n\n"
@@ -1655,21 +1678,25 @@ def scan_market_and_alert(state, signals, indicator_cache, breadth_pct):
     send_telegram_message(msg_text, reply_markup=kb)
 
 # ==============================================================================
-# BUCLE CONTINUO DE SESION V5.6
+# BUCLE CONTINUO DE SESION V5.6.2 (AUTO-SINCRONIZADO CON WALL STREET NY)
 # ==============================================================================
 def run_continuous_session():
     state = load_state()
     signals = load_signals()
 
     now_m = now_madrid()
+    ny_m = now_ny()
+    mad_open, mad_entry, mad_close = get_madrid_market_hours_str()
     free_bp = get_free_buying_power(state)
     m = compute_quant_audit_metrics(state)
+
     send_telegram_message(
-        f"🟢 <b>OMNI-SCANNER VELOCITY V5.6 EN LÍNEA ({now_m.strftime('%H:%M:%S')} ESP)</b>\n"
+        f"🟢 <b>OMNI-SCANNER AUTO-DST V5.6.2 EN LÍNEA ({now_m.strftime('%H:%M')} ESP / {ny_m.strftime('%H:%M')} NY)</b>\n"
         f"• <b>Poder Total:</b> <code>{state['equity']:,.2f} $</code> | <b>Libre:</b> <code>{free_bp:,.2f} $</code>\n"
-        f"• <b>Mejoras V5.6:</b> <code>Filtro Anti-Zombie | Desbloqueo Tarde | /corregir</code>\n"
+        f"• <b>Horario Wall Street Hoy (ESP):</b> <b><code>{mad_open} a {mad_close} ESP</code></b>\n"
+        f"• <b>Ventana de Compras (ESP):</b> <b><code>Desde las {mad_entry} ESP (10:00 NY)</code></b>\n"
         f"• <b>Auditoría Actual:</b> <code>WR {m['wr']:.1f}% | R:R 1:{m['rr_ratio']:.2f} | PF {m['pf']:.2f}</code>\n"
-        f"• <b>Comandos:</b> <code>/historial</code>, <code>/cartera</code>, <code>/corregir SIMB PRECIO</code>"
+        f"• <b>Comandos:</b> <code>/historial</code>, <code>/cartera</code>, <code>/radar</code>, <code>/corregir SIMB PRECIO</code>"
     )
 
     raw_data = fetch_omni_market_batch()
@@ -1679,20 +1706,23 @@ def run_continuous_session():
     while True:
         process_telegram_updates(state, signals, indicator_cache, breadth_pct)
 
-        now_m = now_madrid()
-        t_val = now_m.hour + (now_m.minute / 60.0)
+        ny_m = now_ny()
+        t_ny = ny_m.hour + (ny_m.minute / 60.0)
 
-        if t_val >= 22.04:
-            save_state(state, push_to_git=True, msg="EOD Argon Quant v5.6 sync")
+        # Cierre automatico a las 16:02 NY (21:02 ESP en semana de cambio de hora / 22:02 ESP resto del ano)
+        if t_ny >= 16.04:
+            save_state(state, push_to_git=True, msg="EOD Argon Quant v5.6.2 sync")
+            mad_now_str = now_madrid().strftime("%H:%M")
             send_telegram_message(
-                f"🏁 <b>SESIÓN CERRADA EN WALL STREET (22:02 ESP)</b>\n\n"
+                f"🏁 <b>SESIÓN CERRADA EN WALL STREET ({mad_now_str} ESP / 16:02 NY)</b>\n\n"
                 + build_historial_audit_report(state)
             )
             break
 
         if time.time() - last_scan_ts >= 60:
             last_scan_ts = time.time()
-            if 15.45 <= t_val <= 22.02:
+            # Escanea activamente entre las 09:45 NY y las 16:02 NY (sin importar la hora de Espana)
+            if 9.75 <= t_ny <= 16.03:
                 new_raw = fetch_omni_market_batch()
                 if new_raw is not None:
                     indicator_cache, breadth_pct = build_indicator_cache_and_breadth(new_raw)
