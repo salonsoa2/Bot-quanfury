@@ -3,7 +3,7 @@
   "equity": 2004.73,
   "peak_equity": 2012.85,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988743,
+  "last_update_id": 599988744,
   "pending_signals": {},
   "open_positions": {
     "PANW": {
@@ -66,7 +66,7 @@
       "initial_shares": 1,
       "realized_partial_usd": 0.0,
       "entry_price": 336.59,
-      "stop_loss": 333.48,
+      "stop_loss": 337.37,
       "initial_stop_loss": 333.48,
       "take_profit": 344.05,
       "atr": 2.19,
@@ -77,7 +77,7 @@
       "trail_1_stop": 339.39,
       "trail_2_trigger": 342.97,
       "trail_2_stop": 341.25,
-      "trail0_triggered": false,
+      "trail0_triggered": true,
       "be_triggered": false,
       "trail2_triggered": false,
       "timestop_alerted": false,
