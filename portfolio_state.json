@@ -1,38 +1,11 @@
 {
   "initial_capital": 2000.0,
-  "equity": 2012.46,
+  "equity": 2012.54,
   "peak_equity": 2013.72,
   "max_drawdown_pct": -1.12,
-  "last_update_id": 599988761,
+  "last_update_id": 599988765,
   "pending_signals": {},
-  "open_positions": {
-    "CVX": {
-      "symbol": "CVX",
-      "sector": "Energia_Industria_Defensa",
-      "engine": "Motor 3: Despegue Virgen desde VWAP (Alto RVOL)",
-      "shares": 2,
-      "initial_shares": 2,
-      "realized_partial_usd": 0.0,
-      "entry_price": 229.81,
-      "stop_loss": 227.75,
-      "initial_stop_loss": 227.75,
-      "take_profit": 234.75,
-      "atr": 1.49,
-      "one_r": 2.06,
-      "trail_0_trigger": 232.59,
-      "trail_0_stop": 230.74,
-      "trail_1_trigger": 233.52,
-      "trail_1_stop": 232.08,
-      "trail_2_trigger": 234.14,
-      "trail_2_stop": 233.11,
-      "trail0_triggered": false,
-      "be_triggered": false,
-      "trail2_triggered": false,
-      "timestop_alerted": true,
-      "opened_ts": 1793198306.806395,
-      "opened_at": "2026-10-28 15:38:26"
-    }
-  },
+  "open_positions": {},
   "closed_trades": [
     {
       "symbol": "ABNB",
@@ -133,12 +106,12 @@
       "reason": "Escudo Break-Even (+0.2R)"
     }
   ],
-  "realized_pnl": 9.05,
-  "total_trades": 29,
-  "wins": 16,
+  "realized_pnl": 9.13,
+  "total_trades": 30,
+  "wins": 17,
   "losses": 13,
   "consecutive_losses": 0,
-  "gross_profit": 52.51,
+  "gross_profit": 52.59,
   "gross_loss": 43.46,
   "daily_pnl": {
     "2026-10-15": 19.01,
@@ -147,7 +120,8 @@
     "2026-10-21": 13.51,
     "2026-10-23": -1.36,
     "2026-10-26": -6.76,
-    "2026-10-27": 7.73
+    "2026-10-27": 7.73,
+    "2026-10-28": 0.08
   },
   "trade_history": [
     {
@@ -497,6 +471,18 @@
       "pnl_pct": 0.72,
       "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
       "closed_at": "2026-10-27 20:56:38"
+    },
+    {
+      "symbol": "CVX",
+      "sector": "Energia_Industria_Defensa",
+      "engine": "Motor 3: Despegue Virgen desde VWAP (Alto RVOL)",
+      "shares": 2,
+      "entry_price": 229.81,
+      "exit_price": 229.85,
+      "pnl_usd": 0.08,
+      "pnl_pct": 0.02,
+      "reason": "👤 CIERRE MANUAL / STOP EN QUANTFURY",
+      "closed_at": "2026-10-28 20:57:09"
     }
   ],
   "cooldowns": {
@@ -518,12 +504,12 @@
     "NOW": "2026-10-21T17:29:00.131582+02:00",
     "TSLA": "2026-10-21T19:15:26.358285+02:00",
     "PANW": "2026-10-27T18:57:13.297343+01:00",
-    "CVX": "2026-10-28T16:09:56.594527+01:00",
+    "CVX": "2026-10-28T21:32:09.723324+01:00",
     "XOM": "2026-10-23T22:33:30.956061+02:00",
     "AAPL": "2026-10-27T19:25:37.516150+01:00",
     "TSM": "2026-10-27T21:31:38.015239+01:00",
     "VRT": "2026-10-27T21:24:06.254775+01:00"
   },
   "last_global_signal_ts": 1793198096.6036716,
-  "eod_alert_sent_date": "2026-10-27"
+  "eod_alert_sent_date": "2026-10-28"
 }
