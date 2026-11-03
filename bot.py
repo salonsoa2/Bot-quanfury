@@ -25,7 +25,7 @@ TZ_MADRID = pytz.timezone("Europe/Madrid")
 TZ_NY = pytz.timezone("America/New_York")
 
 # Gestion de Capital Armonizada: 1R Constante (~4.20$ - 5.20$ en tramo 2.000$)
-DEFAULT_INITIAL_CAPITAL = 2000.0
+DEFAULT_INITIAL_CAPITAL = 6000.0
 BASE_RISK_PCT = 0.0021              # 0.21% del poder = 4.20$ de riesgo base uniforme
 HIGH_CONVICTION_RISK_PCT = 0.0026   # 0.26% del poder = 5.20$ en alta conviccion
 MAX_SINGLE_RISK_CAP = 0.0038        # 0.38% tope maximo por redondeo de 1 accion (7.60$)
